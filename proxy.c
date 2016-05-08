@@ -205,7 +205,7 @@ static void setupSignals()
   }
 }
 
-enum AbstractSocketInfoType
+enum SocketInfoType
 {
   SERVER_SOCKET_INFO_TYPE,
   CONNECTION_SOCKET_INFO_TYPE
@@ -213,12 +213,12 @@ enum AbstractSocketInfoType
 
 struct AbstractSocketInfo
 {
-  enum AbstractSocketInfoType socketInfoType;
+  enum SocketInfoType socketInfoType;
 };
 
 struct ServerSocketInfo
 {
-  enum AbstractSocketInfoType socketInfoType;
+  enum SocketInfoType socketInfoType;
   int socket;
 };
 
@@ -230,7 +230,7 @@ enum ConnectionSocketInfoType
 
 struct ConnectionSocketInfo
 {
-  enum AbstractSocketInfoType socketInfoType;
+  enum SocketInfoType socketInfoType;
   int socket;
   enum ConnectionSocketInfoType type;
   bool waitingForConnect;
