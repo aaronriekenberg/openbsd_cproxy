@@ -69,6 +69,23 @@ int setSocketSplice(
   return setsockopt(fromSocket, SOL_SOCKET, SO_SPLICE, &toSocket, sizeof(toSocket));
 }
 
+int setBidirectionalSplice(
+  int socket1,
+  int socket2)
+{
+  int retVal;
+
+  retVal = setSocketSplice(socket1, socket2);
+  if (retVal < 0)
+  {
+    return retVal;
+  }
+
+  retVal = setSocketSplice(socket2, socket1);
+
+  return retVal;
+}
+
 int getSocketError(
   int socket)
 {

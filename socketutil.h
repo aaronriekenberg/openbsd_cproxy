@@ -44,6 +44,10 @@ extern int setSocketSplice(
   int fromSocket,
   int toSocket);
 
+extern int setBidirectionalSplice(
+  int socket1,
+  int socket2);
+
 extern int getSocketError(
   int socket);
 

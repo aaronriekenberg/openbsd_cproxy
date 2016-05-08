@@ -16,10 +16,10 @@
 
 #include "errutil.h"
 #include "fdutil.h"
+#include "kqueue_pollutil.h"
 #include "linkedlist.h"
 #include "log.h"
 #include "memutil.h"
-#include "pollutil.h"
 #include "socketutil.h"
 #include <assert.h>
 #include <errno.h>
@@ -240,38 +240,6 @@ struct ConnectionSocketInfo
   struct AddrPortStrings serverAddrPortStrings;
 };
 
-static void addConnectionSocketInfoToPollState(
-  struct PollState* pollState,
-  struct ConnectionSocketInfo* connectionSocketInfo)
-{
-  addPollFDToPollState(
-    pollState,
-    connectionSocketInfo->socket,
-    connectionSocketInfo,
-    (connectionSocketInfo->waitingForRead ?
-     INTERESTED_IN_READ_EVENTS :
-     NOT_INTERESTED_IN_READ_EVENTS),
-    (connectionSocketInfo->waitingForConnect ?
-     INTERESTED_IN_WRITE_EVENTS :
-     NOT_INTERESTED_IN_WRITE_EVENTS));
-}
-
-static void updatePollStateForConnectionSocketInfo(
-  struct PollState* pollState,
-  struct ConnectionSocketInfo* connectionSocketInfo)
-{
-  updatePollFDInPollState(
-    pollState,
-    connectionSocketInfo->socket,
-    connectionSocketInfo,
-    (connectionSocketInfo->waitingForRead ?
-     INTERESTED_IN_READ_EVENTS :
-     NOT_INTERESTED_IN_READ_EVENTS),
-    (connectionSocketInfo->waitingForConnect ?
-     INTERESTED_IN_WRITE_EVENTS :
-     NOT_INTERESTED_IN_WRITE_EVENTS));
-}
-
 static void setupServerSockets(
   const struct LinkedList* serverAddrInfoList,
   struct PollState* pollState)
@@ -346,12 +314,48 @@ static void setupServerSockets(
              serverAddrPortStrings.portString,
              serverSocketInfo->socket);
 
-    addPollFDToPollState(
+    addPollFDForRead(
       pollState,
       serverSocketInfo->socket,
-      serverSocketInfo,
-      INTERESTED_IN_READ_EVENTS,
-      NOT_INTERESTED_IN_WRITE_EVENTS);
+      serverSocketInfo);
+  }
+}
+
+static void addConnectionSocketInfoToPollState(
+  struct PollState* pollState,
+  struct ConnectionSocketInfo* connectionSocketInfo)
+{
+  if (connectionSocketInfo->waitingForConnect)
+  {
+    addPollFDForWrite(
+      pollState,
+      connectionSocketInfo->socket,
+      connectionSocketInfo);
+  }
+  if (connectionSocketInfo->waitingForRead)
+  {
+    addPollFDForRead(
+      pollState,
+      connectionSocketInfo->socket,
+      connectionSocketInfo);
+  }
+}
+
+static void removeConnectionSocketInfoFromPollState(
+  struct PollState* pollState,
+  struct ConnectionSocketInfo* connectionSocketInfo)
+{
+  if (connectionSocketInfo->waitingForConnect)
+  {
+    removePollFDForWrite(
+      pollState,
+      connectionSocketInfo->socket);
+  }
+  if (connectionSocketInfo->waitingForRead)
+  {
+    removePollFDForRead(
+      pollState,
+      connectionSocketInfo->socket);
   }
 }
 
@@ -365,12 +369,6 @@ static bool setupClientSocket(
   socklen_t clientAddressSize;
   struct sockaddr_storage proxyServerAddress;
   socklen_t proxyServerAddressSize;
-
-  if (setFDNonBlocking(clientSocket) < 0)
-  {
-    proxyLog("error setting non-blocking on accepted socket");
-    return false;
-  }
 
   if ((proxySettings->noDelay) && (setSocketNoDelay(clientSocket) < 0))
   {
@@ -494,10 +492,10 @@ static struct RemoteSocketResult createRemoteSocket(
   else
   {
     result.status = REMOTE_SOCKET_CONNECTED;
-    if ((setSocketSplice(clientSocket, result.remoteSocket) < 0) ||
-        (setSocketSplice(result.remoteSocket, clientSocket) < 0))
+    if (setBidirectionalSplice(clientSocket, result.remoteSocket) < 0)
     {
-      proxyLog("splice error");
+      proxyLog("splice setup error");
+      signalSafeClose(result.remoteSocket);
       result.status = REMOTE_SOCKET_ERROR;
       result.remoteSocket = -1;
       return result;
@@ -651,15 +649,14 @@ static void destroyConnection(
   struct ConnectionSocketInfo* connectionSocketInfo,
   struct PollState* pollState)
 {
-  const int socket = connectionSocketInfo->socket;
   struct ConnectionSocketInfo* relatedConnectionSocketInfo =
     connectionSocketInfo->relatedConnectionSocketInfo;
 
   printDisconnectMessage(connectionSocketInfo);
+  removeConnectionSocketInfoFromPollState(pollState, connectionSocketInfo);
+  signalSafeClose(connectionSocketInfo->socket);
   free(connectionSocketInfo);
   connectionSocketInfo = NULL;
-  removePollFDFromPollState(pollState, socket);
-  signalSafeClose(socket);
 
   if (relatedConnectionSocketInfo)
   {
@@ -700,7 +697,7 @@ static struct ConnectionSocketInfo* handleConnectionReadyForRead(
 
   if (connectionSocketInfo->waitingForRead)
   {
-    proxyLog("splice read error");
+    proxyLog("splice read error fd %d", connectionSocketInfo->socket);
     pDisconnectSocketInfo = connectionSocketInfo;
   }
 
@@ -730,20 +727,25 @@ static struct ConnectionSocketInfo* handleConnectionReadyForWrite(
                connectionSocketInfo->serverAddrPortStrings.addrString,
                connectionSocketInfo->serverAddrPortStrings.portString,
                connectionSocketInfo->socket);
-      if ((setSocketSplice(connectionSocketInfo->socket, relatedConnectionSocketInfo->socket) < 0) ||
-          (setSocketSplice(relatedConnectionSocketInfo->socket, connectionSocketInfo->socket) < 0))
+      if (setBidirectionalSplice(
+            connectionSocketInfo->socket,
+            relatedConnectionSocketInfo->socket) < 0)
       {
-        proxyLog("splice error");
+        proxyLog("splice setup error");
         pDisconnectSocketInfo = connectionSocketInfo;
       }
       else
       {
+        removeConnectionSocketInfoFromPollState(pollState, connectionSocketInfo);
+        removeConnectionSocketInfoFromPollState(pollState, relatedConnectionSocketInfo);
+
         connectionSocketInfo->waitingForConnect = false;
         connectionSocketInfo->waitingForRead = true;
-        updatePollStateForConnectionSocketInfo(pollState, connectionSocketInfo);
+        addConnectionSocketInfoToPollState(pollState, connectionSocketInfo);
+
         relatedConnectionSocketInfo->waitingForConnect = false;
         relatedConnectionSocketInfo->waitingForRead = true;
-        updatePollStateForConnectionSocketInfo(pollState, relatedConnectionSocketInfo);
+        addConnectionSocketInfoToPollState(pollState, relatedConnectionSocketInfo);
       }
     }
     else if (socketError == EINPROGRESS)
