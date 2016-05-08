@@ -923,8 +923,6 @@ int main(
 {
   const struct ProxySettings* proxySettings;
 
-  proxyLogSetThreadName("main");
-
   proxySettings = processArgs(argc, argv);
   runProxy(proxySettings);
 

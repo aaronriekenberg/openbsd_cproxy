@@ -14,8 +14,8 @@
 # along with cproxy.  If not, see <http://www.gnu.org/licenses/>.
 
 CC = cc
-CFLAGS = -pthread -g -O3 -Wall
-LDFLAGS = -pthread
+CFLAGS = -g -O3 -Wall
+LDFLAGS =
 
 SRC = errutil.c \
       fdutil.c \
