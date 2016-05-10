@@ -25,7 +25,6 @@ struct ReadyFDInfo
   void* data;
   bool readyForRead;
   bool readyForWrite;
-  bool readyForError;
 };
 
 struct PollResult

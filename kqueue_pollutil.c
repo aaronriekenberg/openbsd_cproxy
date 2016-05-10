@@ -266,7 +266,6 @@ const struct PollResult* blockingPoll(
       readyFDInfo->data = readyKEvent->udata;
       readyFDInfo->readyForRead = (readyKEvent->filter == EVFILT_READ);
       readyFDInfo->readyForWrite = (readyKEvent->filter == EVFILT_WRITE);
-      readyFDInfo->readyForError = false;
     }
     return (&(pollState->pollResult));
   }

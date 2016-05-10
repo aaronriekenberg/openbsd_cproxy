@@ -667,28 +667,6 @@ static void destroyConnection(
   }
 }
 
-static struct ConnectionSocketInfo* handleConnectionReadyForError(
-  struct ConnectionSocketInfo* connectionSocketInfo)
-{
-  struct ConnectionSocketInfo* pDisconnectSocketInfo = NULL;
-  const int socketError = getSocketError(connectionSocketInfo->socket);
-  if (socketError != 0)
-  {
-    char* socketErrorString = errnoToString(socketError);
-
-    pDisconnectSocketInfo = connectionSocketInfo;
-
-    proxyLog("fd %d errno %d: %s",
-             connectionSocketInfo->socket,
-             socketError,
-             socketErrorString);
-
-    free(socketErrorString);
-  }
-
-  return pDisconnectSocketInfo;
-}
-
 static struct ConnectionSocketInfo* handleConnectionReadyForRead(
   struct ConnectionSocketInfo* connectionSocketInfo,
   struct PollState* pollState)
@@ -782,21 +760,12 @@ static enum HandleConnectionReadyResult handleConnectionReady(
     POLL_STATE_NOT_INVALIDATED_RESULT;
   struct ConnectionSocketInfo* pDisconnectSocketInfo = NULL;
 
-/*#ifdef DEBUG_PROXY*/
-  proxyLog("fd %d readyForRead %d readyForWrite %d readyForError %d",
+#ifdef DEBUG_PROXY
+  proxyLog("fd %d readyForRead %d readyForWrite %d",
            connectionSocketInfo->socket,
            readyFDInfo->readyForRead,
-           readyFDInfo->readyForWrite,
-           readyFDInfo->readyForError);
-/*#endif*/
-
-  if (readyFDInfo->readyForError &&
-      (!pDisconnectSocketInfo))
-  {
-    pDisconnectSocketInfo = 
-      handleConnectionReadyForError(
-        connectionSocketInfo);
-  }
+           readyFDInfo->readyForWrite);
+#endif
 
   if (readyFDInfo->readyForRead &&
       (!pDisconnectSocketInfo))
