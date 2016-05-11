@@ -245,7 +245,7 @@ const struct PollResult* blockingPoll(
                    internalPollState->kqueueFD,
                    NULL, 0,
                    internalPollState->keventArray,
-                   internalPollState->numReadFDs + internalPollState->numWriteFDs,
+                   internalPollState->keventArrayCapacity,
                    NULL);
     if (retVal < 0)
     {
