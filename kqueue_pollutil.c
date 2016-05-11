@@ -102,9 +102,9 @@ static void resizeKeventArray(
   if (changedCapacity)
   {
     internalPollState->keventArray =
-      checkedRealloc(internalPollState->keventArray,
-                     internalPollState->keventArrayCapacity *
-                     sizeof(struct kevent));
+      checkedReallocarray(internalPollState->keventArray,
+                          internalPollState->keventArrayCapacity,
+                          sizeof(struct kevent));
   }
 }
 

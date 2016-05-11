@@ -43,9 +43,10 @@ void setPollResultNumReadyFDs(
   if (changedCapacity)
   {
     pollResult->readyFDInfoArray =
-      checkedRealloc(
+      checkedReallocarray(
         pollResult->readyFDInfoArray,
-        pollResult->arrayCapacity * sizeof(struct ReadyFDInfo));
+        pollResult->arrayCapacity,
+        sizeof(struct ReadyFDInfo));
   }
 
   pollResult->numReadyFDs = numReadyFDs;
