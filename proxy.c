@@ -265,7 +265,7 @@ static void setupServerSockets(
     }
 
     serverSocketInfo->socket = socket(listenAddrInfo->ai_family,
-                                      listenAddrInfo->ai_socktype,
+                                      listenAddrInfo->ai_socktype | SOCK_NONBLOCK,
                                       listenAddrInfo->ai_protocol);
     if (serverSocketInfo->socket < 0)
     {
@@ -296,14 +296,6 @@ static void setupServerSockets(
     if (setSocketListening(serverSocketInfo->socket) < 0)
     {
       proxyLog("listen error on server socket %s:%s",
-               serverAddrPortStrings.addrString,
-               serverAddrPortStrings.portString);
-      exit(1);
-    }
-
-    if (setFDNonBlocking(serverSocketInfo->socket) < 0)
-    {
-      proxyLog("error setting non-blocking on server socket %s:%s",
                serverAddrPortStrings.addrString,
                serverAddrPortStrings.portString);
       exit(1);
@@ -448,21 +440,13 @@ static struct RemoteSocketResult createRemoteSocket(
     .status = REMOTE_SOCKET_ERROR,
     .remoteSocket =
        socket(proxySettings->remoteAddrInfo->ai_family,
-              proxySettings->remoteAddrInfo->ai_socktype,
+              proxySettings->remoteAddrInfo->ai_socktype | SOCK_NONBLOCK,
               proxySettings->remoteAddrInfo->ai_protocol)
   };
+
   if (result.remoteSocket < 0)
   {
     proxyLog("error creating remote socket errno = %d", errno);
-    result.status = REMOTE_SOCKET_ERROR;
-    result.remoteSocket = -1;
-    return result;
-  }
-
-  if (setFDNonBlocking(result.remoteSocket) < 0)
-  {
-    proxyLog("error setting non-blocking on remote socket");
-    signalSafeClose(result.remoteSocket);
     result.status = REMOTE_SOCKET_ERROR;
     result.remoteSocket = -1;
     return result;
