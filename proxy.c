@@ -33,7 +33,6 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 
-#define DEFAULT_NO_DELAY_SETTING (false)
 #define MAX_OPERATIONS_FOR_ONE_FD (100)
 
 static void printUsageAndExit()
@@ -42,11 +41,9 @@ static void printUsageAndExit()
   printf("  cproxy -l <local addr>:<local port>\n");
   printf("         [-l <local addr>:<local port>...]\n");
   printf("         -r <remote addr>:<remote port>\n");
-  printf("         [-n]\n");
   printf("Arguments:\n");
   printf("  -l <local addr>:<local port>: specify listen address and port\n");
   printf("  -r <remote addr>:<remote port>: specify remote address and port\n");
-  printf("  -n: enable TCP no delay\n");
   exit(1);
 }
 
@@ -133,7 +130,6 @@ static struct addrinfo* parseRemoteAddrPort(
 
 struct ProxySettings
 {
-  bool noDelay;
   struct LinkedList serverAddrInfoList;
   struct addrinfo* remoteAddrInfo;
   struct AddrPortStrings remoteAddrPortStrings;
@@ -148,22 +144,17 @@ static const struct ProxySettings* processArgs(
   bool foundRemoteAddress = false;
   struct ProxySettings* proxySettings = 
     checkedCalloc(1, sizeof(struct ProxySettings));
-  proxySettings->noDelay = DEFAULT_NO_DELAY_SETTING;
   initializeLinkedList(&(proxySettings->serverAddrInfoList));
 
   do
   {
-    retVal = getopt(argc, argv, "l:nr:");
+    retVal = getopt(argc, argv, "l:r:");
     switch (retVal)
     {
     case 'l':
       addToLinkedList(&(proxySettings->serverAddrInfoList),
                       parseAddrPort(optarg));
       foundLocalAddress = true;
-      break;
-
-    case 'n':
-      proxySettings->noDelay = true;
       break;
 
     case 'r':
@@ -362,12 +353,6 @@ static bool setupClientSocket(
   struct sockaddr_storage proxyServerAddress;
   socklen_t proxyServerAddressSize;
 
-  if ((proxySettings->noDelay) && (setSocketNoDelay(clientSocket) < 0))
-  {
-    proxyLog("error setting no delay on accepted socket");
-    return false;
-  }
-
   clientAddressSize = sizeof(clientAddress);
   if (getpeername(
         clientSocket, 
@@ -484,15 +469,6 @@ static struct RemoteSocketResult createRemoteSocket(
       result.remoteSocket = -1;
       return result;
     }
-  }
-
-  if ((proxySettings->noDelay) && (setSocketNoDelay(result.remoteSocket) < 0))
-  {
-    proxyLog("error setting no delay on remote socket");
-    signalSafeClose(result.remoteSocket);
-    result.status = REMOTE_SOCKET_ERROR;
-    result.remoteSocket = -1;
-    return result;
   }
 
   proxyClientAddressSize = sizeof(proxyClientAddress);
@@ -819,8 +795,6 @@ static void runProxy(
   proxyLog("remote address = %s:%s",
            proxySettings->remoteAddrPortStrings.addrString,
            proxySettings->remoteAddrPortStrings.portString);
-  proxyLog("no delay = %d",
-           (unsigned int)(proxySettings->noDelay));
 
   setupSignals();
 
