@@ -64,7 +64,7 @@ void* checkedReallocarray(
   size_t size)
 {
   void* retVal = reallocarray(ptr, nmemb, size);
-  if ((!retVal) && size)
+  if ((!retVal) && nmemb && size)
   {
     printf("reallocarray failed ptr %p nmemb %ld size %ld\n",
            ptr, (long)nmemb, (long)size);
