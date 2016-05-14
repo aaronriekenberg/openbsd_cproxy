@@ -134,12 +134,12 @@ static struct addrinfo* parseRemoteAddrPort(
 struct ServerAddrInfo
 {
   struct addrinfo* addrinfo;
-  TAILQ_ENTRY(ServerAddrInfo) entry;
+  SIMPLEQ_ENTRY(ServerAddrInfo) entry;
 };
 
 struct ProxySettings
 {
-  TAILQ_HEAD(,ServerAddrInfo) serverAddrInfoList;
+  SIMPLEQ_HEAD(,ServerAddrInfo) serverAddrInfoList;
   struct addrinfo* remoteAddrInfo;
   struct AddrPortStrings remoteAddrPortStrings;
 };
@@ -153,7 +153,7 @@ static const struct ProxySettings* processArgs(
   struct ProxySettings* proxySettings = 
     checkedCalloc(1, sizeof(struct ProxySettings));
 
-  TAILQ_INIT(&(proxySettings->serverAddrInfoList));
+  SIMPLEQ_INIT(&(proxySettings->serverAddrInfoList));
   do
   {
     retVal = getopt(argc, argv, "l:r:");
@@ -162,7 +162,7 @@ static const struct ProxySettings* processArgs(
     case 'l':
       pServerAddrInfo = checkedCalloc(1, sizeof(struct ServerAddrInfo));
       pServerAddrInfo->addrinfo = parseAddrPort(optarg);
-      TAILQ_INSERT_TAIL(
+      SIMPLEQ_INSERT_TAIL(
         &(proxySettings->serverAddrInfoList),
         pServerAddrInfo, entry);
       break;
@@ -170,7 +170,7 @@ static const struct ProxySettings* processArgs(
     case 'r':
       if (proxySettings->remoteAddrInfo)
       {
-        printUsageAndExit();
+        goto fail;
       }
       proxySettings->remoteAddrInfo =
         parseRemoteAddrPort(
@@ -179,19 +179,23 @@ static const struct ProxySettings* processArgs(
       break;
 
     case '?':
-      printUsageAndExit();
+      goto fail;
       break;
     }
   }
   while (retVal != -1);
 
-  if (TAILQ_EMPTY(&(proxySettings->serverAddrInfoList)) ||
+  if (SIMPLEQ_EMPTY(&(proxySettings->serverAddrInfoList)) ||
       (!(proxySettings->remoteAddrInfo)))
   {
-    printUsageAndExit();
+    goto fail;
   }
 
   return proxySettings;
+
+fail:
+  printUsageAndExit();
+  return NULL;
 }
 
 static void setupSignals()
@@ -247,7 +251,7 @@ static void setupServerSockets(
 {
   const struct ServerAddrInfo* pServerAddrInfo;
 
-  TAILQ_FOREACH(pServerAddrInfo, &(proxySettings->serverAddrInfoList), entry)
+  SIMPLEQ_FOREACH(pServerAddrInfo, &(proxySettings->serverAddrInfoList), entry)
   {
     const struct addrinfo* listenAddrInfo = pServerAddrInfo->addrinfo;
     struct AddrPortStrings serverAddrPortStrings;
