@@ -147,8 +147,6 @@ static const struct ProxySettings* processArgs(
 {
   int retVal;
   struct ServerAddrInfo* pServerAddrInfo;
-  bool foundLocalAddress = false;
-  bool foundRemoteAddress = false;
   struct ProxySettings* proxySettings = 
     checkedCalloc(1, sizeof(struct ProxySettings));
 
@@ -164,11 +162,10 @@ static const struct ProxySettings* processArgs(
       TAILQ_INSERT_TAIL(
         &(proxySettings->serverAddrInfoList),
         pServerAddrInfo, entries);
-      foundLocalAddress = true;
       break;
 
     case 'r':
-      if (foundRemoteAddress)
+      if (proxySettings->remoteAddrInfo)
       {
         printUsageAndExit();
       }
@@ -176,7 +173,6 @@ static const struct ProxySettings* processArgs(
         parseRemoteAddrPort(
           optarg,
           &(proxySettings->remoteAddrPortStrings));
-      foundRemoteAddress = true;
       break;
 
     case '?':
@@ -186,7 +182,8 @@ static const struct ProxySettings* processArgs(
   }
   while (retVal != -1);
 
-  if ((!foundLocalAddress) || (!foundRemoteAddress))
+  if (TAILQ_EMPTY(&(proxySettings->serverAddrInfoList)) ||
+      (!(proxySettings->remoteAddrInfo)))
   {
     printUsageAndExit();
   }
