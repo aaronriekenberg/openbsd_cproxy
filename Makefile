@@ -20,7 +20,6 @@ LDFLAGS =
 SRC = errutil.c \
       fdutil.c \
       kqueue_pollutil.c \
-      linkedlist.c \
       log.c \
       memutil.c \
       pollresult.c \

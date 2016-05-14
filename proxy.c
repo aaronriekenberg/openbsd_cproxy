@@ -17,7 +17,6 @@
 #include "errutil.h"
 #include "fdutil.h"
 #include "kqueue_pollutil.h"
-#include "linkedlist.h"
 #include "log.h"
 #include "memutil.h"
 #include "socketutil.h"
@@ -29,9 +28,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/types.h>
-#include <netinet/in.h>
+#include <sys/queue.h>
 
 #define MAX_OPERATIONS_FOR_ONE_FD (100)
 
@@ -128,9 +128,15 @@ static struct addrinfo* parseRemoteAddrPort(
   return addressInfo;
 }
 
+struct ServerAddrInfo
+{
+  struct addrinfo* addrinfo;
+  TAILQ_ENTRY(ServerAddrInfo) entries;
+};
+
 struct ProxySettings
 {
-  struct LinkedList serverAddrInfoList;
+  TAILQ_HEAD(,ServerAddrInfo) serverAddrInfoList;
   struct addrinfo* remoteAddrInfo;
   struct AddrPortStrings remoteAddrPortStrings;
 };
@@ -142,18 +148,22 @@ static const struct ProxySettings* processArgs(
   int retVal;
   bool foundLocalAddress = false;
   bool foundRemoteAddress = false;
+  struct ServerAddrInfo* pServerAddrInfo;
   struct ProxySettings* proxySettings = 
     checkedCalloc(1, sizeof(struct ProxySettings));
-  initializeLinkedList(&(proxySettings->serverAddrInfoList));
 
+  TAILQ_INIT(&(proxySettings->serverAddrInfoList));
   do
   {
     retVal = getopt(argc, argv, "l:r:");
     switch (retVal)
     {
     case 'l':
-      addToLinkedList(&(proxySettings->serverAddrInfoList),
-                      parseAddrPort(optarg));
+      pServerAddrInfo = checkedCalloc(1, sizeof(struct ServerAddrInfo));
+      pServerAddrInfo->addrinfo = parseAddrPort(optarg);
+      TAILQ_INSERT_TAIL(
+        &(proxySettings->serverAddrInfoList),
+        pServerAddrInfo, entries);
       foundLocalAddress = true;
       break;
 
@@ -232,16 +242,14 @@ struct ConnectionSocketInfo
 };
 
 static void setupServerSockets(
-  const struct LinkedList* serverAddrInfoList,
+  const struct ProxySettings* proxySettings,
   struct PollState* pollState)
 {
-  struct LinkedListNode* nodePtr;
+  const struct ServerAddrInfo* pServerAddrInfo;
 
-  for (nodePtr = serverAddrInfoList->head;
-       nodePtr;
-       nodePtr = nodePtr->next)
+  TAILQ_FOREACH(pServerAddrInfo, &(proxySettings->serverAddrInfoList), entries)
   {
-    const struct addrinfo* listenAddrInfo = nodePtr->data;
+    const struct addrinfo* listenAddrInfo = pServerAddrInfo->addrinfo;
     struct AddrPortStrings serverAddrPortStrings;
     struct ServerSocketInfo* serverSocketInfo =
       checkedCalloc(1, sizeof(struct ServerSocketInfo));
@@ -801,7 +809,7 @@ static void runProxy(
   initializePollState(&pollState);
 
   setupServerSockets(
-    &(proxySettings->serverAddrInfoList),
+    proxySettings,
     &pollState);
 
   while (true)
