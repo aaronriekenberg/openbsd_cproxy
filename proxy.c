@@ -131,7 +131,7 @@ static struct addrinfo* parseRemoteAddrPort(
 struct ServerAddrInfo
 {
   struct addrinfo* addrinfo;
-  TAILQ_ENTRY(ServerAddrInfo) entries;
+  TAILQ_ENTRY(ServerAddrInfo) entry;
 };
 
 struct ProxySettings
@@ -161,7 +161,7 @@ static const struct ProxySettings* processArgs(
       pServerAddrInfo->addrinfo = parseAddrPort(optarg);
       TAILQ_INSERT_TAIL(
         &(proxySettings->serverAddrInfoList),
-        pServerAddrInfo, entries);
+        pServerAddrInfo, entry);
       break;
 
     case 'r':
@@ -244,7 +244,7 @@ static void setupServerSockets(
 {
   const struct ServerAddrInfo* pServerAddrInfo;
 
-  TAILQ_FOREACH(pServerAddrInfo, &(proxySettings->serverAddrInfoList), entries)
+  TAILQ_FOREACH(pServerAddrInfo, &(proxySettings->serverAddrInfoList), entry)
   {
     const struct addrinfo* listenAddrInfo = pServerAddrInfo->addrinfo;
     struct AddrPortStrings serverAddrPortStrings;
