@@ -146,9 +146,9 @@ static const struct ProxySettings* processArgs(
   char** argv)
 {
   int retVal;
+  struct ServerAddrInfo* pServerAddrInfo;
   bool foundLocalAddress = false;
   bool foundRemoteAddress = false;
-  struct ServerAddrInfo* pServerAddrInfo;
   struct ProxySettings* proxySettings = 
     checkedCalloc(1, sizeof(struct ProxySettings));
 
