@@ -359,9 +359,8 @@ static void removeConnectionSocketInfoFromPollState(
   }
 }
 
-static bool setupClientSocket(
+static bool getAddressesForClientSocket(
   int clientSocket,
-  const struct ProxySettings* proxySettings,
   struct AddrPortStrings* clientAddrPortStrings,
   struct AddrPortStrings* proxyServerAddrPortStrings)
 {
@@ -532,9 +531,8 @@ static void handleNewClientSocket(
   struct ConnectionSocketInfo* connInfo1;
   struct ConnectionSocketInfo* connInfo2;
 
-  if (!setupClientSocket(
+  if (!getAddressesForClientSocket(
         clientSocket,
-        proxySettings,
         &clientAddrPortStrings,
         &proxyServerAddrPortStrings))
   {
