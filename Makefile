@@ -14,7 +14,7 @@
 # along with cproxy.  If not, see <http://www.gnu.org/licenses/>.
 
 CC = cc
-CFLAGS = -g -O3 -Wall
+CFLAGS = -g -Wall
 LDFLAGS =
 
 SRC = errutil.c \
