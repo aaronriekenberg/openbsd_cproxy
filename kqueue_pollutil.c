@@ -63,7 +63,6 @@ static int signalSafeKevent(
   struct kevent *eventlist, int nevents,
   const struct timespec *timeout)
 {
-  const struct timespec zeroTimespec = {0, 0};
   bool interrupted;
   int retVal;
   do
@@ -74,10 +73,6 @@ static int signalSafeKevent(
       timeout);
     interrupted = ((retVal < 0) &&
                    (errno == EINTR));
-    /* Set timeout = &zeroTimespec so that if the last kevent was
-       interrupted we don't block on the next try.  Assumes
-       waiting too long is worse than not waiting long enough. */
-    timeout = &zeroTimespec;
   } while (interrupted);
   return retVal;
 }
@@ -113,7 +108,6 @@ void addPollFDForRead(
   int fd,
   void* data)
 {
-  const struct timespec ts = {0, 0};
   struct InternalPollState* internalPollState;
   struct kevent event;
   int retVal;
@@ -124,7 +118,7 @@ void addPollFDForRead(
 
   EV_SET(&event, fd, EVFILT_READ, EV_ADD, 0, 0, data);
 
-  retVal = signalSafeKevent(internalPollState->kqueueFD, &event, 1, NULL, 0, &ts);
+  retVal = signalSafeKevent(internalPollState->kqueueFD, &event, 1, NULL, 0, NULL);
   if (retVal < 0)
   {
     proxyLog("kevent add read event error fd %d errno %d: %s",
@@ -144,7 +138,6 @@ void removePollFDForRead(
   struct PollState* pollState,
   int fd)
 {
-  const struct timespec ts = {0, 0};
   struct InternalPollState* internalPollState;
   struct kevent event;
   int retVal;
@@ -154,7 +147,7 @@ void removePollFDForRead(
   internalPollState = pollState->internalPollState;
 
   EV_SET(&event, fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
-  retVal = signalSafeKevent(internalPollState->kqueueFD, &event, 1, NULL, 0, &ts);
+  retVal = signalSafeKevent(internalPollState->kqueueFD, &event, 1, NULL, 0, NULL);
   if (retVal < 0)
   {
     proxyLog("kevent remove read event error fd %d errno %d: %s",
@@ -174,7 +167,6 @@ void addPollFDForWrite(
   int fd,
   void* data)
 {
-  const struct timespec ts = {0, 0};
   struct InternalPollState* internalPollState;
   struct kevent event;
   int retVal;
@@ -185,7 +177,7 @@ void addPollFDForWrite(
 
   EV_SET(&event, fd, EVFILT_WRITE, EV_ADD, 0, 0, data);
 
-  retVal = signalSafeKevent(internalPollState->kqueueFD, &event, 1, NULL, 0, &ts);
+  retVal = signalSafeKevent(internalPollState->kqueueFD, &event, 1, NULL, 0, NULL);
   if (retVal < 0)
   {
     proxyLog("kevent add write event error fd %d errno %d: %s",
@@ -205,7 +197,6 @@ void removePollFDForWrite(
   struct PollState* pollState,
   int fd)
 {
-  const struct timespec ts = {0, 0};
   struct InternalPollState* internalPollState;
   struct kevent event;
   int retVal;
@@ -215,7 +206,7 @@ void removePollFDForWrite(
   internalPollState = pollState->internalPollState;
 
   EV_SET(&event, fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
-  retVal = signalSafeKevent(internalPollState->kqueueFD, &event, 1, NULL, 0, &ts);
+  retVal = signalSafeKevent(internalPollState->kqueueFD, &event, 1, NULL, 0, NULL);
   if (retVal < 0)
   {
     proxyLog("kevent remove write event error fd %d errno %d: %s",
