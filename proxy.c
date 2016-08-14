@@ -210,22 +210,30 @@ static void setupSignals()
   }
 }
 
-enum SocketInfoType
+enum HandleConnectionReadyResult
 {
-  SERVER_SOCKET_INFO_TYPE,
-  CONNECTION_SOCKET_INFO_TYPE
+  POLL_STATE_INVALIDATED_RESULT,
+  POLL_STATE_NOT_INVALIDATED_RESULT
 };
+
+typedef enum HandleConnectionReadyResult(*HandleConnectionReadyFunction)
+  (const struct ProxySettings*, struct ReadyFDInfo*, struct PollState*);
 
 struct AbstractSocketInfo
 {
-  enum SocketInfoType socketInfoType;
+  HandleConnectionReadyFunction handleConnectionReadyFunction;
 };
 
 struct ServerSocketInfo
 {
-  enum SocketInfoType socketInfoType;
+  HandleConnectionReadyFunction handleConnectionReadyFunction;
   int socket;
 };
+
+static enum HandleConnectionReadyResult handleServerSocketReady(
+  const struct ProxySettings* proxySettings,
+  struct ReadyFDInfo* readyFDInfo,
+  struct PollState* pollState);
 
 enum ConnectionSocketInfoType
 {
@@ -235,7 +243,7 @@ enum ConnectionSocketInfoType
 
 struct ConnectionSocketInfo
 {
-  enum SocketInfoType socketInfoType;
+  HandleConnectionReadyFunction handleConnectionReadyFunction;
   int socket;
   enum ConnectionSocketInfoType type;
   bool waitingForConnect;
@@ -244,6 +252,11 @@ struct ConnectionSocketInfo
   struct AddrPortStrings clientAddrPortStrings;
   struct AddrPortStrings serverAddrPortStrings;
 };
+
+static enum HandleConnectionReadyResult handleConnectionSocketReady(
+  const struct ProxySettings* proxySettings,
+  struct ReadyFDInfo* readyFDInfo,
+  struct PollState* pollState);
 
 static void setupServerSockets(
   const struct ProxySettings* proxySettings,
@@ -257,7 +270,7 @@ static void setupServerSockets(
     struct AddrPortStrings serverAddrPortStrings;
     struct ServerSocketInfo* serverSocketInfo =
       checkedCalloc(1, sizeof(struct ServerSocketInfo));
-    serverSocketInfo->socketInfoType = SERVER_SOCKET_INFO_TYPE;
+    serverSocketInfo->handleConnectionReadyFunction = handleServerSocketReady;
 
     if (addressToNameAndPort(listenAddrInfo->ai_addr,
                              listenAddrInfo->ai_addrlen,
@@ -549,7 +562,7 @@ static void handleNewClientSocket(
   }
 
   connInfo1 = checkedCalloc(1, sizeof(struct ConnectionSocketInfo));
-  connInfo1->socketInfoType = CONNECTION_SOCKET_INFO_TYPE;
+  connInfo1->handleConnectionReadyFunction = handleConnectionSocketReady;
   connInfo1->socket = clientSocket;
   connInfo1->type = CLIENT_TO_PROXY;
   if (remoteSocketResult.status == REMOTE_SOCKET_CONNECTED)
@@ -570,7 +583,7 @@ static void handleNewClientSocket(
          sizeof(struct AddrPortStrings));
 
   connInfo2 = checkedCalloc(1, sizeof(struct ConnectionSocketInfo));
-  connInfo2->socketInfoType = CONNECTION_SOCKET_INFO_TYPE;
+  connInfo2->handleConnectionReadyFunction = handleConnectionSocketReady;
   connInfo2->socket = remoteSocketResult.remoteSocket;
   connInfo2->type = PROXY_TO_REMOTE;
   if (remoteSocketResult.status == REMOTE_SOCKET_CONNECTED)
@@ -716,17 +729,13 @@ static struct ConnectionSocketInfo* handleConnectionReadyForWrite(
   return pDisconnectSocketInfo;
 }
 
-enum HandleConnectionReadyResult
-{
-  POLL_STATE_INVALIDATED_RESULT,
-  POLL_STATE_NOT_INVALIDATED_RESULT
-};
 
-static enum HandleConnectionReadyResult handleConnectionReady(
-  const struct ReadyFDInfo* readyFDInfo,
-  struct ConnectionSocketInfo* connectionSocketInfo,
+static enum HandleConnectionReadyResult handleConnectionSocketReady(
+  const struct ProxySettings* proxySettings,
+  struct ReadyFDInfo* readyFDInfo,
   struct PollState* pollState)
 {
+  struct ConnectionSocketInfo* connectionSocketInfo = readyFDInfo->data;
   enum HandleConnectionReadyResult handleConnectionReadyResult =
     POLL_STATE_NOT_INVALIDATED_RESULT;
   struct ConnectionSocketInfo* pDisconnectSocketInfo = NULL;
@@ -767,11 +776,12 @@ static enum HandleConnectionReadyResult handleConnectionReady(
   return handleConnectionReadyResult;
 }
 
-static void handleServerSocketReady(
-  const struct ServerSocketInfo* serverSocketInfo,
+static enum HandleConnectionReadyResult handleServerSocketReady(
   const struct ProxySettings* proxySettings,
+  struct ReadyFDInfo* readyFDInfo,
   struct PollState* pollState)
 {
+  struct ServerSocketInfo* serverSocketInfo = readyFDInfo->data;
   bool acceptError = false;
   int numAccepts = 0;
   while ((!acceptError) &&
@@ -796,6 +806,7 @@ static void handleServerSocketReady(
         pollState);
     }
   }
+  return POLL_STATE_NOT_INVALIDATED_RESULT;
 }
 
 static void runProxy(
@@ -834,22 +845,12 @@ static void runProxy(
       struct ReadyFDInfo* readyFDInfo =
         &(pollResult->readyFDInfoArray[i]);
       struct AbstractSocketInfo* pAbstractSocketInfo = readyFDInfo->data;
-      if (pAbstractSocketInfo->socketInfoType == SERVER_SOCKET_INFO_TYPE)
+      enum HandleConnectionReadyResult handleConnectionReadyResult =
+        (*pAbstractSocketInfo->handleConnectionReadyFunction)(
+          proxySettings, readyFDInfo, &pollState);
+      if (handleConnectionReadyResult == POLL_STATE_INVALIDATED_RESULT)
       {
-        handleServerSocketReady(
-          (struct ServerSocketInfo*)pAbstractSocketInfo,
-          proxySettings,
-          &pollState);
-      }
-      else if (pAbstractSocketInfo->socketInfoType == CONNECTION_SOCKET_INFO_TYPE)
-      {
-        if (handleConnectionReady(
-              readyFDInfo,
-              (struct ConnectionSocketInfo*)pAbstractSocketInfo,
-              &pollState) == POLL_STATE_INVALIDATED_RESULT)
-        {
-          pollStateInvalidated = true;
-        }
+        pollStateInvalidated = true;
       }
     }
   }
