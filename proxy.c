@@ -216,8 +216,13 @@ enum HandleConnectionReadyResult
   POLL_STATE_NOT_INVALIDATED_RESULT
 };
 
-typedef enum HandleConnectionReadyResult(*HandleConnectionReadyFunction)
-  (const struct ProxySettings*, struct ReadyFDInfo*, struct PollState*);
+struct AbstractSocketInfo;
+
+typedef enum HandleConnectionReadyResult (*HandleConnectionReadyFunction)(
+  struct AbstractSocketInfo* abstractSocketInfo,
+  const struct ReadyFDInfo* readyFDInfo,
+  const struct ProxySettings* proxySettings,
+  struct PollState* pollState);
 
 struct AbstractSocketInfo
 {
@@ -231,8 +236,9 @@ struct ServerSocketInfo
 };
 
 static enum HandleConnectionReadyResult handleServerSocketReady(
+  struct AbstractSocketInfo* abstractSocketInfo,
+  const struct ReadyFDInfo* readyFDInfo,
   const struct ProxySettings* proxySettings,
-  struct ReadyFDInfo* readyFDInfo,
   struct PollState* pollState);
 
 enum ConnectionSocketInfoType
@@ -254,8 +260,9 @@ struct ConnectionSocketInfo
 };
 
 static enum HandleConnectionReadyResult handleConnectionSocketReady(
+  struct AbstractSocketInfo* abstractSocketInfo,
+  const struct ReadyFDInfo* readyFDInfo,
   const struct ProxySettings* proxySettings,
-  struct ReadyFDInfo* readyFDInfo,
   struct PollState* pollState);
 
 static void setupServerSockets(
@@ -731,11 +738,12 @@ static struct ConnectionSocketInfo* handleConnectionReadyForWrite(
 
 
 static enum HandleConnectionReadyResult handleConnectionSocketReady(
+  struct AbstractSocketInfo* abstractSocketInfo,
+  const struct ReadyFDInfo* readyFDInfo,
   const struct ProxySettings* proxySettings,
-  struct ReadyFDInfo* readyFDInfo,
   struct PollState* pollState)
 {
-  struct ConnectionSocketInfo* connectionSocketInfo = readyFDInfo->data;
+  struct ConnectionSocketInfo* connectionSocketInfo = (struct ConnectionSocketInfo*) abstractSocketInfo;
   enum HandleConnectionReadyResult handleConnectionReadyResult =
     POLL_STATE_NOT_INVALIDATED_RESULT;
   struct ConnectionSocketInfo* pDisconnectSocketInfo = NULL;
@@ -777,11 +785,12 @@ static enum HandleConnectionReadyResult handleConnectionSocketReady(
 }
 
 static enum HandleConnectionReadyResult handleServerSocketReady(
+  struct AbstractSocketInfo* abstractSocketInfo,
+  const struct ReadyFDInfo* readyFDInfo,
   const struct ProxySettings* proxySettings,
-  struct ReadyFDInfo* readyFDInfo,
   struct PollState* pollState)
 {
-  struct ServerSocketInfo* serverSocketInfo = readyFDInfo->data;
+  struct ServerSocketInfo* serverSocketInfo = (struct ServerSocketInfo*) abstractSocketInfo;
   bool acceptError = false;
   int numAccepts = 0;
   while ((!acceptError) &&
@@ -847,7 +856,7 @@ static void runProxy(
       struct AbstractSocketInfo* pAbstractSocketInfo = readyFDInfo->data;
       enum HandleConnectionReadyResult handleConnectionReadyResult =
         (*pAbstractSocketInfo->handleConnectionReadyFunction)(
-          proxySettings, readyFDInfo, &pollState);
+          pAbstractSocketInfo, readyFDInfo, proxySettings, &pollState);
       if (handleConnectionReadyResult == POLL_STATE_INVALIDATED_RESULT)
       {
         pollStateInvalidated = true;
