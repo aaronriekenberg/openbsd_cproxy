@@ -17,50 +17,6 @@
 #ifndef FDUTIL_H
 #define FDUTIL_H
 
-#include <stddef.h>
-
-extern int setFDNonBlocking(
-  int fd);
-
-enum ReadFromFDStatus
-{
-  READ_FROM_FD_WOULD_BLOCK,
-  READ_FROM_FD_EOF,
-  READ_FROM_FD_ERROR,
-  READ_FROM_FD_SUCCESS
-};
-
-struct ReadFromFDResult
-{
-  enum ReadFromFDStatus status;
-  int readErrno;
-  size_t bytesRead;
-};
-
-struct ReadFromFDResult readFromFD(
-  int fd,
-  void* buf,
-  size_t bytesToRead);
-
-enum WriteToFDStatus
-{
-  WRITE_TO_FD_WOULD_BLOCK,
-  WRITE_TO_FD_ERROR,
-  WRITE_TO_FD_SUCCESS
-};
-
-struct WriteToFDResult
-{
-  enum WriteToFDStatus status;
-  int writeErrno;
-  size_t bytesWritten;
-};
-
-struct WriteToFDResult writeToFD(
-  int fd,
-  const void* buf,
-  size_t bytesToWrite);
-
 extern int signalSafeClose(
   int fd);
 
