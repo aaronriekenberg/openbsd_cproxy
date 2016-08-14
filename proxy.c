@@ -37,13 +37,13 @@
 
 static void printUsageAndExit()
 {
-  printf("Usage:\n");
-  printf("  cproxy -l <local addr>:<local port>\n");
-  printf("         [-l <local addr>:<local port>...]\n");
-  printf("         -r <remote addr>:<remote port>\n");
-  printf("Arguments:\n");
-  printf("  -l <local addr>:<local port>: specify listen address and port\n");
-  printf("  -r <remote addr>:<remote port>: specify remote address and port\n");
+  printf("Usage:\n"
+         "  cproxy -l <local addr>:<local port>\n"
+         "         [-l <local addr>:<local port>...]\n"
+         "         -r <remote addr>:<remote port>\n"
+         "Arguments:\n"
+         "  -l <local addr>:<local port>: specify listen address and port\n"
+         "  -r <remote addr>:<remote port>: specify remote address and port\n");
   exit(1);
 }
 
