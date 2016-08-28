@@ -86,6 +86,20 @@ int setBidirectionalSplice(
   return retVal;
 }
 
+off_t getSpliceBytesTransferred(
+  int socket)
+{
+  off_t bytesTransferred;
+  socklen_t optlen = sizeof(bytesTransferred);
+  int retVal =
+    getsockopt(socket, SOL_SOCKET, SO_SPLICE, &bytesTransferred, &optlen);
+  if (retVal < 0)
+  {
+    bytesTransferred = 0;
+  }
+  return bytesTransferred;
+}
+
 int getSocketError(
   int socket)
 {

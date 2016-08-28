@@ -625,15 +625,18 @@ fail:
 static void printDisconnectMessage(
   const struct ConnectionSocketInfo* connectionSocketInfo)
 {
-  proxyLog("disconnect %s %s:%s -> %s:%s (fd=%d)",
-           ((connectionSocketInfo->type == CLIENT_TO_PROXY) ?
-            "client to proxy" :
-            "proxy to remote"),
+  const char* typeString =
+    ((connectionSocketInfo->type == CLIENT_TO_PROXY) ?
+     "client to proxy" :
+     "proxy to remote");
+  proxyLog("disconnect %s %s:%s -> %s:%s (fd=%d,bytes=%ld)",
+           typeString,
            connectionSocketInfo->clientAddrPortStrings.addrString,
            connectionSocketInfo->clientAddrPortStrings.portString,
            connectionSocketInfo->serverAddrPortStrings.addrString,
            connectionSocketInfo->serverAddrPortStrings.portString,
-           connectionSocketInfo->socket);
+           connectionSocketInfo->socket,
+           getSpliceBytesTransferred(connectionSocketInfo->socket));
 }
 
 static void destroyConnection(

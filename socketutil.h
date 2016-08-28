@@ -48,6 +48,9 @@ extern int setBidirectionalSplice(
   int socket1,
   int socket2);
 
+extern off_t getSpliceBytesTransferred(
+  int socket);
+
 extern int getSocketError(
   int socket);
 
