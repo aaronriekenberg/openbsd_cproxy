@@ -854,10 +854,10 @@ static void runProxy(
          (i < pollResult->numReadyFDs);
          ++i)
     {
-      struct ReadyFDInfo* readyFDInfo =
+      const struct ReadyFDInfo* readyFDInfo =
         &(pollResult->readyFDInfoArray[i]);
       struct AbstractSocketInfo* pAbstractSocketInfo = readyFDInfo->data;
-      enum HandleConnectionReadyResult handleConnectionReadyResult =
+      const enum HandleConnectionReadyResult handleConnectionReadyResult =
         (*(pAbstractSocketInfo->handleConnectionReadyFunction))(
           pAbstractSocketInfo, readyFDInfo, proxySettings, &pollState);
       if (handleConnectionReadyResult == POLL_STATE_INVALIDATED_RESULT)
