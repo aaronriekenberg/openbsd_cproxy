@@ -34,6 +34,7 @@
 #include <sys/queue.h>
 
 #define MAX_OPERATIONS_FOR_ONE_FD (100)
+#define DEFAULT_CONNECT_TIMEOUT_MS (5000)
 
 static void printUsageAndExit()
 {
@@ -41,7 +42,9 @@ static void printUsageAndExit()
          "  cproxy -l <local addr>:<local port>\n"
          "         [-l <local addr>:<local port>...]\n"
          "         -r <remote addr>:<remote port>\n"
+         "         [-c <connect timeout milliseconds>]\n"
          "Arguments:\n"
+         "  -c <connect timeout milliseconds>: specify connection timeout in milliseconds\n"
          "  -l <local addr>:<local port>: specify listen address and port\n"
          "  -r <remote addr>:<remote port>: specify remote address and port\n");
   exit(1);
@@ -142,6 +145,7 @@ struct ProxySettings
   SIMPLEQ_HEAD(,ServerAddrInfo) serverAddrInfoList;
   struct addrinfo* remoteAddrInfo;
   struct AddrPortStrings remoteAddrPortStrings;
+  uint64_t connectTimeoutMS;
 };
 
 static const struct ProxySettings* processArgs(
@@ -153,12 +157,17 @@ static const struct ProxySettings* processArgs(
   struct ProxySettings* proxySettings = 
     checkedCalloc(1, sizeof(struct ProxySettings));
 
+  proxySettings->connectTimeoutMS = DEFAULT_CONNECT_TIMEOUT_MS;
   SIMPLEQ_INIT(&(proxySettings->serverAddrInfoList));
   do
   {
-    retVal = getopt(argc, argv, "l:r:");
+    retVal = getopt(argc, argv, "c:l:r:");
     switch (retVal)
     {
+    case 'c':
+      proxySettings->connectTimeoutMS = atoll(optarg);
+      break;
+
     case 'l':
       pServerAddrInfo = checkedCalloc(1, sizeof(struct ServerAddrInfo));
       pServerAddrInfo->addrinfo = parseAddrPort(optarg);
@@ -343,7 +352,8 @@ fail:
 
 static void addConnectionSocketInfoToPollState(
   struct PollState* pollState,
-  struct ConnectionSocketInfo* connectionSocketInfo)
+  struct ConnectionSocketInfo* connectionSocketInfo,
+  const struct ProxySettings* proxySettings)
 {
   if (connectionSocketInfo->waitingForConnect)
   {
@@ -351,6 +361,11 @@ static void addConnectionSocketInfoToPollState(
       pollState,
       connectionSocketInfo->socket,
       connectionSocketInfo);
+    addPollFDForTimeout(
+      pollState,
+      connectionSocketInfo->socket,
+      connectionSocketInfo,
+      proxySettings->connectTimeoutMS);
   }
   if (connectionSocketInfo->waitingForRead)
   {
@@ -368,6 +383,9 @@ static void removeConnectionSocketInfoFromPollState(
   if (connectionSocketInfo->waitingForConnect)
   {
     removePollFDForWrite(
+      pollState,
+      connectionSocketInfo->socket);
+    removePollFDForTimeout(
       pollState,
       connectionSocketInfo->socket);
   }
@@ -613,8 +631,8 @@ static void handleNewClientSocket(
   connInfo1->relatedConnectionSocketInfo = connInfo2;
   connInfo2->relatedConnectionSocketInfo = connInfo1;
 
-  addConnectionSocketInfoToPollState(pollState, connInfo1);
-  addConnectionSocketInfoToPollState(pollState, connInfo2);
+  addConnectionSocketInfoToPollState(pollState, connInfo1, proxySettings);
+  addConnectionSocketInfoToPollState(pollState, connInfo2, proxySettings);
 
   return;
 
@@ -678,7 +696,8 @@ static struct ConnectionSocketInfo* handleConnectionReadyForRead(
 
 static struct ConnectionSocketInfo* handleConnectionReadyForWrite(
   struct ConnectionSocketInfo* connectionSocketInfo,
-  struct PollState* pollState)
+  struct PollState* pollState,
+  const struct ProxySettings* proxySettings)
 {
   struct ConnectionSocketInfo* relatedConnectionSocketInfo =
     connectionSocketInfo->relatedConnectionSocketInfo;
@@ -726,11 +745,11 @@ static struct ConnectionSocketInfo* handleConnectionReadyForWrite(
 
       connectionSocketInfo->waitingForConnect = false;
       connectionSocketInfo->waitingForRead = true;
-      addConnectionSocketInfoToPollState(pollState, connectionSocketInfo);
+      addConnectionSocketInfoToPollState(pollState, connectionSocketInfo, proxySettings);
 
       relatedConnectionSocketInfo->waitingForConnect = false;
       relatedConnectionSocketInfo->waitingForRead = true;
-      addConnectionSocketInfoToPollState(pollState, relatedConnectionSocketInfo);
+      addConnectionSocketInfoToPollState(pollState, relatedConnectionSocketInfo, proxySettings);
     }
   }
 
@@ -740,6 +759,20 @@ fail:
   return connectionSocketInfo;
 }
 
+static struct ConnectionSocketInfo* handleConnectionReadyForTimeout(
+  struct ConnectionSocketInfo* connectionSocketInfo,
+  struct PollState* pollState)
+{
+  struct ConnectionSocketInfo* pDisconnectSocketInfo = NULL;
+
+  if (connectionSocketInfo->waitingForConnect)
+  {
+    proxyLog("connect timeout fd %d", connectionSocketInfo->socket);
+    pDisconnectSocketInfo = connectionSocketInfo;
+  }
+
+  return pDisconnectSocketInfo;
+}
 
 static enum HandleConnectionReadyResult handleConnectionSocketReady(
   struct AbstractSocketInfo* abstractSocketInfo,
@@ -753,10 +786,11 @@ static enum HandleConnectionReadyResult handleConnectionSocketReady(
   struct ConnectionSocketInfo* pDisconnectSocketInfo = NULL;
 
 #ifdef DEBUG_PROXY
-  proxyLog("fd %d readyForRead %d readyForWrite %d",
+  proxyLog("fd %d readyForRead %d readyForWrite %d readyForTimeout %d",
            connectionSocketInfo->socket,
            readyFDInfo->readyForRead,
-           readyFDInfo->readyForWrite);
+           readyFDInfo->readyForWrite,
+           readyFDInfo->readyForTimeout);
 #endif
 
   if (readyFDInfo->readyForRead &&
@@ -773,6 +807,16 @@ static enum HandleConnectionReadyResult handleConnectionSocketReady(
   {
     pDisconnectSocketInfo =
       handleConnectionReadyForWrite(
+        connectionSocketInfo,
+        pollState,
+        proxySettings);
+  }
+
+  if (readyFDInfo->readyForTimeout &&
+      (!pDisconnectSocketInfo))
+  {
+    pDisconnectSocketInfo =
+      handleConnectionReadyForTimeout(
         connectionSocketInfo,
         pollState);
   }
@@ -830,6 +874,7 @@ static void runProxy(
   proxyLog("remote address = %s:%s",
            proxySettings->remoteAddrPortStrings.addrString,
            proxySettings->remoteAddrPortStrings.portString);
+  proxyLog("connect timeout milliseconds = %ld", proxySettings->connectTimeoutMS);
 
   setupSignals();
 

@@ -18,6 +18,7 @@
 #define KQUEUE_POLLUTIL_H
 
 #include "pollresult.h"
+#include <sys/types.h>
 
 struct PollState
 {
@@ -43,6 +44,16 @@ extern void addPollFDForWrite(
   void* data);
 
 extern void removePollFDForWrite(
+  struct PollState* pollState,
+  int fd);
+
+extern void addPollFDForTimeout(
+  struct PollState* pollState,
+  int fd,
+  void* data,
+  uint64_t milliseconds);
+
+extern void removePollFDForTimeout(
   struct PollState* pollState,
   int fd);
 
