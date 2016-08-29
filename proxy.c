@@ -680,7 +680,6 @@ static struct ConnectionSocketInfo* handleConnectionReadyForWrite(
   struct ConnectionSocketInfo* connectionSocketInfo,
   struct PollState* pollState)
 {
-  struct ConnectionSocketInfo* pDisconnectSocketInfo = NULL;
   struct ConnectionSocketInfo* relatedConnectionSocketInfo =
     connectionSocketInfo->relatedConnectionSocketInfo;
 
@@ -691,40 +690,11 @@ static struct ConnectionSocketInfo* handleConnectionReadyForWrite(
     assert(relatedConnectionSocketInfo != NULL);
 
     socketError = getSocketError(connectionSocketInfo->socket);
-    if (socketError == 0)
-    {
-      proxyLog("connect complete proxy to remote %s:%s -> %s:%s (fd=%d)",
-               connectionSocketInfo->clientAddrPortStrings.addrString,
-               connectionSocketInfo->clientAddrPortStrings.portString,
-               connectionSocketInfo->serverAddrPortStrings.addrString,
-               connectionSocketInfo->serverAddrPortStrings.portString,
-               connectionSocketInfo->socket);
-      if (setBidirectionalSplice(
-            connectionSocketInfo->socket,
-            relatedConnectionSocketInfo->socket) < 0)
-      {
-        proxyLog("splice setup error");
-        pDisconnectSocketInfo = connectionSocketInfo;
-      }
-      else
-      {
-        removeConnectionSocketInfoFromPollState(pollState, connectionSocketInfo);
-        removeConnectionSocketInfoFromPollState(pollState, relatedConnectionSocketInfo);
-
-        connectionSocketInfo->waitingForConnect = false;
-        connectionSocketInfo->waitingForRead = true;
-        addConnectionSocketInfoToPollState(pollState, connectionSocketInfo);
-
-        relatedConnectionSocketInfo->waitingForConnect = false;
-        relatedConnectionSocketInfo->waitingForRead = true;
-        addConnectionSocketInfoToPollState(pollState, relatedConnectionSocketInfo);
-      }
-    }
-    else if (socketError == EINPROGRESS)
+    if (socketError == EINPROGRESS)
     {
       /* do nothing, still in progress */
     }
-    else
+    else if (socketError != 0)
     {
       char* socketErrorString = errnoToString(socketError);
       proxyLog("async remote connect fd %d errno %d: %s",
@@ -732,11 +702,42 @@ static struct ConnectionSocketInfo* handleConnectionReadyForWrite(
                socketError,
                socketErrorString);
       free(socketErrorString);
-      pDisconnectSocketInfo = connectionSocketInfo;
+      goto fail;
+    }
+    else
+    {
+      proxyLog("connect complete proxy to remote %s:%s -> %s:%s (fd=%d)",
+               connectionSocketInfo->clientAddrPortStrings.addrString,
+               connectionSocketInfo->clientAddrPortStrings.portString,
+               connectionSocketInfo->serverAddrPortStrings.addrString,
+               connectionSocketInfo->serverAddrPortStrings.portString,
+               connectionSocketInfo->socket);
+
+      if (setBidirectionalSplice(
+            connectionSocketInfo->socket,
+            relatedConnectionSocketInfo->socket) < 0)
+      {
+        proxyLog("splice setup error");
+        goto fail;
+      }
+
+      removeConnectionSocketInfoFromPollState(pollState, connectionSocketInfo);
+      removeConnectionSocketInfoFromPollState(pollState, relatedConnectionSocketInfo);
+
+      connectionSocketInfo->waitingForConnect = false;
+      connectionSocketInfo->waitingForRead = true;
+      addConnectionSocketInfoToPollState(pollState, connectionSocketInfo);
+
+      relatedConnectionSocketInfo->waitingForConnect = false;
+      relatedConnectionSocketInfo->waitingForRead = true;
+      addConnectionSocketInfoToPollState(pollState, relatedConnectionSocketInfo);
     }
   }
 
-  return pDisconnectSocketInfo;
+  return NULL;
+
+fail:
+  return connectionSocketInfo;
 }
 
 
