@@ -108,7 +108,7 @@ static struct addrinfo* parseAddrPort(
   {
     proxyLog("error resolving address %s %s",
              optarg, gai_strerror(retVal));
-    exit(1);
+    goto fail;
   }
 
   return addressInfo;
@@ -132,6 +132,17 @@ static struct addrinfo* parseRemoteAddrPort(
   }
 
   return addressInfo;
+}
+
+static uint64_t parseConnectTimeoutMS(char* optarg)
+{
+  const int64_t connectTimeoutMS = atoll(optarg);
+  if (connectTimeoutMS <= 0)
+  {
+    proxyLog("invalid connect timeout argument '%s'", optarg);
+    exit(1);
+  }
+  return connectTimeoutMS;
 }
 
 struct ServerAddrInfo
@@ -165,7 +176,7 @@ static const struct ProxySettings* processArgs(
     switch (retVal)
     {
     case 'c':
-      proxySettings->connectTimeoutMS = atoll(optarg);
+      proxySettings->connectTimeoutMS = parseConnectTimeoutMS(optarg);
       break;
 
     case 'l':
