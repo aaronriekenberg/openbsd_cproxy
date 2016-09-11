@@ -165,25 +165,27 @@ void removePollFDForRead(
   }
 }
 
-void addPollFDForWrite(
+void addPollFDForWriteAndTimeout(
   struct PollState* pollState,
   int fd,
-  void* data)
+  void* data,
+  uint64_t timeoutMillseconds)
 {
   struct InternalPollState* internalPollState;
-  struct kevent event;
+  struct kevent events[2];
   int retVal;
 
   assert(pollState != NULL);
 
   internalPollState = pollState->internalPollState;
 
-  EV_SET(&event, fd, EVFILT_WRITE, EV_ADD, 0, 0, data);
+  EV_SET(&(events[0]), fd, EVFILT_WRITE, EV_ADD, 0, 0, data);
+  EV_SET(&(events[1]), fd, EVFILT_TIMER, EV_ADD, 0, timeoutMillseconds, data);
 
-  retVal = signalSafeKevent(internalPollState->kqueueFD, &event, 1, NULL, 0, NULL);
+  retVal = signalSafeKevent(internalPollState->kqueueFD, events, 2, NULL, 0, NULL);
   if (retVal < 0)
   {
-    proxyLog("kevent add write event error fd %d errno %d: %s",
+    proxyLog("kevent add write and timeout events error fd %d errno %d: %s",
              fd,
              errno,
              errnoToString(errno));
@@ -192,27 +194,30 @@ void addPollFDForWrite(
   else
   {
     ++(internalPollState->numWriteFDs);
+    ++(internalPollState->numTimeoutFDs);
     resizeKeventArray(internalPollState);
   }
 }
 
-void removePollFDForWrite(
+void removePollFDForWriteAndTimeout(
   struct PollState* pollState,
   int fd)
 {
   struct InternalPollState* internalPollState;
-  struct kevent event;
+  struct kevent events[2];
   int retVal;
 
   assert(pollState != NULL);
 
   internalPollState = pollState->internalPollState;
 
-  EV_SET(&event, fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
-  retVal = signalSafeKevent(internalPollState->kqueueFD, &event, 1, NULL, 0, NULL);
+  EV_SET(&(events[0]), fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
+  EV_SET(&(events[1]), fd, EVFILT_TIMER, EV_DELETE, 0, 0, NULL);
+
+  retVal = signalSafeKevent(internalPollState->kqueueFD, events, 2, NULL, 0, NULL);
   if (retVal < 0)
   {
-    proxyLog("kevent remove write event error fd %d errno %d: %s",
+    proxyLog("kevent remove write and timeout events error fd %d errno %d: %s",
              fd,
              errno,
              errnoToString(errno));
@@ -221,65 +226,6 @@ void removePollFDForWrite(
   else
   {
     --(internalPollState->numWriteFDs);
-  }
-}
-
-void addPollFDForTimeout(
-  struct PollState* pollState,
-  int fd,
-  void* data,
-  uint64_t milliseconds)
-{
-  struct InternalPollState* internalPollState;
-  struct kevent event;
-  int retVal;
-
-  assert(pollState != NULL);
-
-  internalPollState = pollState->internalPollState;
-
-  EV_SET(&event, fd, EVFILT_TIMER, EV_ADD, 0, milliseconds, data);
-
-  retVal = signalSafeKevent(internalPollState->kqueueFD, &event, 1, NULL, 0, NULL);
-  if (retVal < 0)
-  {
-    proxyLog("kevent add timeout event error fd %d errno %d: %s",
-             fd,
-             errno,
-             errnoToString(errno));
-    abort();
-  }
-  else
-  {
-    ++(internalPollState->numTimeoutFDs);
-    resizeKeventArray(internalPollState);
-  }
-}
-
-void removePollFDForTimeout(
-  struct PollState* pollState,
-  int fd)
-{
-  struct InternalPollState* internalPollState;
-  struct kevent event;
-  int retVal;
-
-  assert(pollState != NULL);
-
-  internalPollState = pollState->internalPollState;
-
-  EV_SET(&event, fd, EVFILT_TIMER, EV_DELETE, 0, 0, NULL);
-  retVal = signalSafeKevent(internalPollState->kqueueFD, &event, 1, NULL, 0, NULL);
-  if (retVal < 0)
-  {
-    proxyLog("kevent remove timeout event error fd %d errno %d: %s",
-             fd,
-             errno,
-             errnoToString(errno));
-    abort();
-  }
-  else
-  {
     --(internalPollState->numTimeoutFDs);
   }
 }

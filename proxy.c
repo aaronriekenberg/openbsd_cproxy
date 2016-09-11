@@ -368,11 +368,7 @@ static void addConnectionSocketInfoToPollState(
 {
   if (connectionSocketInfo->waitingForConnect)
   {
-    addPollFDForWrite(
-      pollState,
-      connectionSocketInfo->socket,
-      connectionSocketInfo);
-    addPollFDForTimeout(
+    addPollFDForWriteAndTimeout(
       pollState,
       connectionSocketInfo->socket,
       connectionSocketInfo,
@@ -393,10 +389,7 @@ static void removeConnectionSocketInfoFromPollState(
 {
   if (connectionSocketInfo->waitingForConnect)
   {
-    removePollFDForWrite(
-      pollState,
-      connectionSocketInfo->socket);
-    removePollFDForTimeout(
+    removePollFDForWriteAndTimeout(
       pollState,
       connectionSocketInfo->socket);
   }

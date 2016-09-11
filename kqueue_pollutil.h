@@ -38,22 +38,13 @@ extern void removePollFDForRead(
   struct PollState* pollState,
   int fd);
 
-extern void addPollFDForWrite(
-  struct PollState* pollState,
-  int fd,
-  void* data);
-
-extern void removePollFDForWrite(
-  struct PollState* pollState,
-  int fd);
-
-extern void addPollFDForTimeout(
+extern void addPollFDForWriteAndTimeout(
   struct PollState* pollState,
   int fd,
   void* data,
-  uint64_t milliseconds);
+  uint64_t timeoutMillseconds);
 
-extern void removePollFDForTimeout(
+extern void removePollFDForWriteAndTimeout(
   struct PollState* pollState,
   int fd);
 
