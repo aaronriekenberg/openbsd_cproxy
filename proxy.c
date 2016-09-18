@@ -361,6 +361,15 @@ fail:
   exit(1);
 }
 
+static void setupPledge()
+{
+  if (pledge("stdio inet", NULL) == -1)
+  {
+    proxyLog("pledge failed");
+    abort();
+  }
+}
+
 static void addConnectionSocketInfoToPollState(
   struct PollState* pollState,
   struct ConnectionSocketInfo* connectionSocketInfo,
@@ -530,7 +539,7 @@ static struct RemoteSocketResult createRemoteSocket(
         (struct sockaddr*)&proxyClientAddress,
         &proxyClientAddressSize) < 0)
   {
-    proxyLog("getsockname error errno = %d", errno);
+    proxyLog("remote getsockname error errno = %d", errno);
     goto failWithSocket;
   }
 
@@ -887,6 +896,8 @@ static void runProxy(
   setupServerSockets(
     proxySettings,
     &pollState);
+
+  setupPledge();
 
   while (true)
   {
