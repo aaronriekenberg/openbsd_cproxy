@@ -26,7 +26,7 @@ extern void addPollFDForWriteAndTimeout(
   struct PollState* pollState,
   int fd,
   void* data,
-  uint64_t timeoutMillseconds);
+  uint32_t timeoutMillseconds);
 
 extern void removePollFDForWriteAndTimeout(
   struct PollState* pollState,

@@ -688,7 +688,7 @@ static void runProxy(
   proxyLog("remote address = %s:%s",
            proxySettings->remoteAddrPortStrings.addrString,
            proxySettings->remoteAddrPortStrings.portString);
-  proxyLog("connect timeout milliseconds = %ld", proxySettings->connectTimeoutMS);
+  proxyLog("connect timeout milliseconds = %d", proxySettings->connectTimeoutMS);
 
   setupSignals();
 

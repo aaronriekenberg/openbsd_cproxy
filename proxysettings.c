@@ -106,9 +106,9 @@ static struct addrinfo* parseRemoteAddrPort(
   return addressInfo;
 }
 
-static uint64_t parseConnectTimeoutMS(char* optarg)
+static uint32_t parseConnectTimeoutMS(char* optarg)
 {
-  const int64_t connectTimeoutMS = atoll(optarg);
+  const int connectTimeoutMS = atoi(optarg);
   if (connectTimeoutMS <= 0)
   {
     proxyLog("invalid connect timeout argument '%s'", optarg);

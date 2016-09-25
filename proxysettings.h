@@ -15,7 +15,7 @@ struct ProxySettings
   SIMPLEQ_HEAD(,ServerAddrInfo) serverAddrInfoList;
   struct addrinfo* remoteAddrInfo;
   struct AddrPortStrings remoteAddrPortStrings;
-  uint64_t connectTimeoutMS;
+  uint32_t connectTimeoutMS;
 };
 
 extern const struct ProxySettings* processArgs(

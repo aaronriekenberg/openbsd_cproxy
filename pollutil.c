@@ -153,7 +153,7 @@ void addPollFDForWriteAndTimeout(
   struct PollState* pollState,
   int fd,
   void* data,
-  uint64_t timeoutMillseconds)
+  uint32_t timeoutMillseconds)
 {
   struct InternalPollState* internalPollState;
   struct kevent events[2];
