@@ -1,8 +1,8 @@
 #include "errutil.h"
 #include "fdutil.h"
-#include "kqueue_pollutil.h"
 #include "log.h"
 #include "memutil.h"
+#include "pollutil.h"
 #include "proxysettings.h"
 #include "socketutil.h"
 #include <assert.h>

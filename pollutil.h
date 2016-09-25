@@ -1,5 +1,5 @@
-#ifndef KQUEUE_POLLUTIL_H
-#define KQUEUE_POLLUTIL_H
+#ifndef POLLUTIL_H
+#define POLLUTIL_H
 
 #include "pollresult.h"
 #include <sys/types.h>

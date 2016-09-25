@@ -4,10 +4,10 @@ LDFLAGS =
 
 SRC = errutil.c \
       fdutil.c \
-      kqueue_pollutil.c \
       log.c \
       memutil.c \
       pollresult.c \
+      pollutil.c \
       proxy.c \
       proxysettings.c \
       socketutil.c \
