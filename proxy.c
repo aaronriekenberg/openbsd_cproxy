@@ -19,18 +19,6 @@
 
 #define MAX_OPERATIONS_FOR_ONE_FD (100)
 
-static void setupSignals()
-{
-  struct sigaction newAction;
-  memset(&newAction, 0, sizeof(struct sigaction));
-  newAction.sa_handler = SIG_IGN;
-  if (sigaction(SIGPIPE, &newAction, NULL) < 0)
-  {
-    proxyLog("sigaction error errno = %d", errno);
-    exit(1);
-  }
-}
-
 enum HandleConnectionReadyResult
 {
   POLL_STATE_INVALIDATED_RESULT,
@@ -85,6 +73,18 @@ static enum HandleConnectionReadyResult handleConnectionSocketReady(
   const struct ReadyFDInfo* readyFDInfo,
   const struct ProxySettings* proxySettings,
   struct PollState* pollState);
+
+static void setupSignals()
+{
+  struct sigaction newAction;
+  memset(&newAction, 0, sizeof(struct sigaction));
+  newAction.sa_handler = SIG_IGN;
+  if (sigaction(SIGPIPE, &newAction, NULL) < 0)
+  {
+    proxyLog("sigaction error errno = %d", errno);
+    exit(1);
+  }
+}
 
 static void setupServerSockets(
   const struct ProxySettings* proxySettings,
