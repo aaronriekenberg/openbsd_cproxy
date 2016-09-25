@@ -162,11 +162,20 @@ fail:
   exit(1);
 }
 
-static void setupPledge()
+static void setupInitialPledge()
+{
+  if (pledge("stdio inet dns", NULL) == -1)
+  {
+    proxyLog("initial pledge failed");
+    abort();
+  }
+}
+
+static void setupRunLoopPledge()
 {
   if (pledge("stdio inet", NULL) == -1)
   {
-    proxyLog("pledge failed");
+    proxyLog("run loop pledge failed");
     abort();
   }
 }
@@ -685,6 +694,8 @@ static void runProxy(
 {
   struct PollState pollState;
 
+  setupRunLoopPledge();
+
   proxyLog("remote address = %s:%s",
            proxySettings->remoteAddrPortStrings.addrString,
            proxySettings->remoteAddrPortStrings.portString);
@@ -697,8 +708,6 @@ static void runProxy(
   setupServerSockets(
     proxySettings,
     &pollState);
-
-  setupPledge();
 
   while (true)
   {
@@ -735,6 +744,8 @@ int main(
   char** argv)
 {
   const struct ProxySettings* proxySettings;
+
+  setupInitialPledge();
 
   proxySettings = processArgs(argc, argv);
   runProxy(proxySettings);
