@@ -9,6 +9,7 @@ SRC = errutil.c \
       memutil.c \
       pollresult.c \
       proxy.c \
+      proxy_settings.c \
       socketutil.c \
       timeutil.c
 OBJS = $(SRC:.c=.o)
