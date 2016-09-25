@@ -1,5 +1,5 @@
-#ifndef PROXY_SETTINGS_H
-#define PROXY_SETTINGS_H
+#ifndef PROXYSETTINGS_H
+#define PROXYSETTINGS_H
 
 #include "socketutil.h"
 #include <sys/queue.h>

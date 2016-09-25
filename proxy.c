@@ -3,7 +3,7 @@
 #include "kqueue_pollutil.h"
 #include "log.h"
 #include "memutil.h"
-#include "proxy_settings.h"
+#include "proxysettings.h"
 #include "socketutil.h"
 #include <assert.h>
 #include <errno.h>

@@ -1,6 +1,6 @@
 #include "log.h"
 #include "memutil.h"
-#include "proxy_settings.h"
+#include "proxysettings.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
