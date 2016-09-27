@@ -663,12 +663,13 @@ static enum HandleConnectionReadyResult handleServerSocketReady(
 {
   struct ServerSocketInfo* serverSocketInfo = (struct ServerSocketInfo*) abstractSocketInfo;
   bool acceptError = false;
-  int numAccepts = 0;
-  while ((!acceptError) &&
-         (numAccepts < MAX_OPERATIONS_FOR_ONE_FD))
+  int i;
+  for (i = 0;
+       (!acceptError) &&
+       (i < MAX_OPERATIONS_FOR_ONE_FD);
+       ++i)
   {
     const int acceptedFD = signalSafeAccept(serverSocketInfo->socket, NULL, NULL);
-    ++numAccepts;
     if (acceptedFD < 0)
     {
       if ((errno != EAGAIN) && (errno != EWOULDBLOCK))
