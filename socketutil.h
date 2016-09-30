@@ -21,9 +21,6 @@ extern int setSocketListening(
 extern int setSocketReuseAddress(
   int socket);
 
-extern int setSocketNoDelay(
-  int socket);
-
 extern int setSocketSplice(
   int fromSocket,
   int toSocket);

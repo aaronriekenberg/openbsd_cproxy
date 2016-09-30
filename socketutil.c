@@ -39,13 +39,6 @@ int setSocketReuseAddress(
   return setsockopt(socket, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
 }
 
-int setSocketNoDelay(
-  int socket)
-{
-  int optval = 1;
-  return setsockopt(socket, IPPROTO_TCP, TCP_NODELAY, &optval, sizeof(optval));
-}
-
 int setSocketSplice(
   int fromSocket, 
   int toSocket)
