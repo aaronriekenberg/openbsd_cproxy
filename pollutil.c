@@ -17,6 +17,7 @@ struct InternalPollState
   size_t numWriteAndTimeoutFDs;
   struct kevent* keventArray;
   size_t keventArrayCapacity;
+  struct PollResult pollResult;
 };
 
 void initializePollState(
@@ -26,7 +27,6 @@ void initializePollState(
 
   assert(pollState != NULL);
 
-  memset(pollState, 0, sizeof(struct PollState));
   internalPollState =
     checkedCalloc(1, sizeof(struct InternalPollState));
   pollState->internalPollState = internalPollState;
@@ -236,12 +236,12 @@ const struct PollResult* blockingPoll(
       abort();
     }
     setPollResultNumReadyFDs(
-      &(pollState->pollResult),
+      &(internalPollState->pollResult),
       retVal);
     for (i = 0; i < retVal; ++i)
     {
       struct ReadyFDInfo* readyFDInfo =
-        &(pollState->pollResult.readyFDInfoArray[i]);
+        &(internalPollState->pollResult.readyFDInfoArray[i]);
       const struct kevent* readyKEvent =
         &(internalPollState->keventArray[i]);
       readyFDInfo->data = readyKEvent->udata;
@@ -249,7 +249,7 @@ const struct PollResult* blockingPoll(
       readyFDInfo->readyForWrite = (readyKEvent->filter == EVFILT_WRITE);
       readyFDInfo->readyForTimeout = (readyKEvent->filter == EVFILT_TIMER);
     }
-    return (&(pollState->pollResult));
+    return (&(internalPollState->pollResult));
   }
   return NULL;
 }

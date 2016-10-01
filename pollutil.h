@@ -7,7 +7,6 @@
 struct PollState
 {
   void* internalPollState;
-  struct PollResult pollResult;
 };
 
 extern void initializePollState(
