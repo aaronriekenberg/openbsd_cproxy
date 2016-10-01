@@ -14,8 +14,7 @@ struct InternalPollState
 {
   int kqueueFD;
   size_t numReadFDs;
-  size_t numWriteFDs;
-  size_t numTimeoutFDs;
+  size_t numWriteAndTimeoutFDs;
   struct kevent* keventArray;
   size_t keventArrayCapacity;
 };
@@ -67,8 +66,7 @@ static void resizeKeventArray(
 {
   bool changedCapacity = false;
   while ((internalPollState->numReadFDs +
-          internalPollState->numWriteFDs +
-          internalPollState->numTimeoutFDs) >
+          internalPollState->numWriteAndTimeoutFDs) >
          internalPollState->keventArrayCapacity)
   {
     changedCapacity = true;
@@ -177,8 +175,7 @@ void addPollFDForWriteAndTimeout(
   }
   else
   {
-    ++(internalPollState->numWriteFDs);
-    ++(internalPollState->numTimeoutFDs);
+    ++(internalPollState->numWriteAndTimeoutFDs);
     resizeKeventArray(internalPollState);
   }
 }
@@ -209,8 +206,7 @@ void removePollFDForWriteAndTimeout(
   }
   else
   {
-    --(internalPollState->numWriteFDs);
-    --(internalPollState->numTimeoutFDs);
+    --(internalPollState->numWriteAndTimeoutFDs);
   }
 }
 
@@ -223,8 +219,7 @@ const struct PollResult* blockingPoll(
 
   internalPollState = pollState->internalPollState;
   if ((internalPollState->numReadFDs +
-       internalPollState->numWriteFDs +
-       internalPollState->numTimeoutFDs) > 0)
+       internalPollState->numWriteAndTimeoutFDs) > 0)
   {
     size_t i;
     const int retVal = signalSafeKevent(
