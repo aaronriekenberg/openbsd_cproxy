@@ -4,13 +4,9 @@
 #include "pollresult.h"
 #include <sys/types.h>
 
-struct PollState
-{
-  void* internalPollState;
-};
+struct PollState;
 
-extern void initializePollState(
-  struct PollState* pollState);
+extern struct PollState* newPollState();
 
 extern void addPollFDForRead(
   struct PollState* pollState,

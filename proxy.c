@@ -693,7 +693,7 @@ static enum HandleConnectionReadyResult handleServerSocketReady(
 static void runProxy(
   const struct ProxySettings* proxySettings)
 {
-  struct PollState pollState;
+  struct PollState* pollState;
 
   setupRunLoopPledge();
 
@@ -704,17 +704,17 @@ static void runProxy(
 
   setupSignals();
 
-  initializePollState(&pollState);
+  pollState = newPollState();
 
   setupServerSockets(
     proxySettings,
-    &pollState);
+    pollState);
 
   while (true)
   {
     size_t i;
     bool pollStateInvalidated = false;
-    const struct PollResult* pollResult = blockingPoll(&pollState);
+    const struct PollResult* pollResult = blockingPoll(pollState);
     if (!pollResult)
     {
       proxyLog("blockingPoll failed");
@@ -731,7 +731,7 @@ static void runProxy(
       struct AbstractSocketInfo* pAbstractSocketInfo = readyFDInfo->data;
       const enum HandleConnectionReadyResult handleConnectionReadyResult =
         (*(pAbstractSocketInfo->handleConnectionReadyFunction))(
-          pAbstractSocketInfo, readyFDInfo, proxySettings, &pollState);
+          pAbstractSocketInfo, readyFDInfo, proxySettings, pollState);
       if (handleConnectionReadyResult == POLL_STATE_INVALIDATED_RESULT)
       {
         pollStateInvalidated = true;

@@ -10,7 +10,7 @@
 #include <sys/event.h>
 #include <sys/time.h>
 
-struct InternalPollState
+struct PollState
 {
   int kqueueFD;
   size_t numReadFDs;
@@ -20,18 +20,11 @@ struct InternalPollState
   struct PollResult pollResult;
 };
 
-void initializePollState(
-  struct PollState* pollState)
+struct PollState* newPollState()
 {
-  struct InternalPollState* internalPollState;
-
-  assert(pollState != NULL);
-
-  internalPollState =
-    checkedCalloc(1, sizeof(struct InternalPollState));
-  pollState->internalPollState = internalPollState;
-  internalPollState->kqueueFD = kqueue();
-  if (internalPollState->kqueueFD < 0)
+  struct PollState* pollState = checkedCalloc(1, sizeof(struct PollState));
+  pollState->kqueueFD = kqueue();
+  if (pollState->kqueueFD < 0)
   {
     proxyLog("kqueue error errno %d: %s",
              errno,
@@ -39,7 +32,8 @@ void initializePollState(
     abort();
   }
   proxyLog("created kqueue (fd=%d)",
-           internalPollState->kqueueFD);
+           pollState->kqueueFD);
+  return pollState;
 }
 
 static int signalSafeKevent(
@@ -62,28 +56,28 @@ static int signalSafeKevent(
 }
 
 static void resizeKeventArray(
-  struct InternalPollState* internalPollState)
+  struct PollState* pollState)
 {
   bool changedCapacity = false;
-  while ((internalPollState->numReadFDs +
-          internalPollState->numWriteAndTimeoutFDs) >
-         internalPollState->keventArrayCapacity)
+  while ((pollState->numReadFDs +
+          pollState->numWriteAndTimeoutFDs) >
+         pollState->keventArrayCapacity)
   {
     changedCapacity = true;
-    if (internalPollState->keventArrayCapacity == 0)
+    if (pollState->keventArrayCapacity == 0)
     {
-      internalPollState->keventArrayCapacity = 16;
+      pollState->keventArrayCapacity = 16;
     }
     else
     {
-      internalPollState->keventArrayCapacity *= 2;
+      pollState->keventArrayCapacity *= 2;
     }
   }
   if (changedCapacity)
   {
-    internalPollState->keventArray =
-      checkedReallocarray(internalPollState->keventArray,
-                          internalPollState->keventArrayCapacity,
+    pollState->keventArray =
+      checkedReallocarray(pollState->keventArray,
+                          pollState->keventArrayCapacity,
                           sizeof(struct kevent));
   }
 }
@@ -93,17 +87,14 @@ void addPollFDForRead(
   int fd,
   void* data)
 {
-  struct InternalPollState* internalPollState;
   struct kevent event;
   int retVal;
 
   assert(pollState != NULL);
 
-  internalPollState = pollState->internalPollState;
-
   EV_SET(&event, fd, EVFILT_READ, EV_ADD, 0, 0, data);
 
-  retVal = signalSafeKevent(internalPollState->kqueueFD, &event, 1, NULL, 0, NULL);
+  retVal = signalSafeKevent(pollState->kqueueFD, &event, 1, NULL, 0, NULL);
   if (retVal < 0)
   {
     proxyLog("kevent add read event error fd %d errno %d: %s",
@@ -114,8 +105,8 @@ void addPollFDForRead(
   }
   else
   {
-    ++(internalPollState->numReadFDs);
-    resizeKeventArray(internalPollState);
+    ++(pollState->numReadFDs);
+    resizeKeventArray(pollState);
   }
 }
 
@@ -123,16 +114,13 @@ void removePollFDForRead(
   struct PollState* pollState,
   int fd)
 {
-  struct InternalPollState* internalPollState;
   struct kevent event;
   int retVal;
 
   assert(pollState != NULL);
 
-  internalPollState = pollState->internalPollState;
-
   EV_SET(&event, fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
-  retVal = signalSafeKevent(internalPollState->kqueueFD, &event, 1, NULL, 0, NULL);
+  retVal = signalSafeKevent(pollState->kqueueFD, &event, 1, NULL, 0, NULL);
   if (retVal < 0)
   {
     proxyLog("kevent remove read event error fd %d errno %d: %s",
@@ -143,7 +131,7 @@ void removePollFDForRead(
   }
   else
   {
-    --(internalPollState->numReadFDs);
+    --(pollState->numReadFDs);
   }
 }
 
@@ -153,18 +141,15 @@ void addPollFDForWriteAndTimeout(
   void* data,
   uint32_t timeoutMillseconds)
 {
-  struct InternalPollState* internalPollState;
   struct kevent events[2];
   int retVal;
 
   assert(pollState != NULL);
 
-  internalPollState = pollState->internalPollState;
-
   EV_SET(&(events[0]), fd, EVFILT_WRITE, EV_ADD, 0, 0, data);
   EV_SET(&(events[1]), fd, EVFILT_TIMER, EV_ADD, 0, timeoutMillseconds, data);
 
-  retVal = signalSafeKevent(internalPollState->kqueueFD, events, 2, NULL, 0, NULL);
+  retVal = signalSafeKevent(pollState->kqueueFD, events, 2, NULL, 0, NULL);
   if (retVal < 0)
   {
     proxyLog("kevent add write and timeout events error fd %d errno %d: %s",
@@ -175,8 +160,8 @@ void addPollFDForWriteAndTimeout(
   }
   else
   {
-    ++(internalPollState->numWriteAndTimeoutFDs);
-    resizeKeventArray(internalPollState);
+    ++(pollState->numWriteAndTimeoutFDs);
+    resizeKeventArray(pollState);
   }
 }
 
@@ -184,18 +169,15 @@ void removePollFDForWriteAndTimeout(
   struct PollState* pollState,
   int fd)
 {
-  struct InternalPollState* internalPollState;
   struct kevent events[2];
   int retVal;
 
   assert(pollState != NULL);
 
-  internalPollState = pollState->internalPollState;
-
   EV_SET(&(events[0]), fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
   EV_SET(&(events[1]), fd, EVFILT_TIMER, EV_DELETE, 0, 0, NULL);
 
-  retVal = signalSafeKevent(internalPollState->kqueueFD, events, 2, NULL, 0, NULL);
+  retVal = signalSafeKevent(pollState->kqueueFD, events, 2, NULL, 0, NULL);
   if (retVal < 0)
   {
     proxyLog("kevent remove write and timeout events error fd %d errno %d: %s",
@@ -206,28 +188,25 @@ void removePollFDForWriteAndTimeout(
   }
   else
   {
-    --(internalPollState->numWriteAndTimeoutFDs);
+    --(pollState->numWriteAndTimeoutFDs);
   }
 }
 
 const struct PollResult* blockingPoll(
   struct PollState* pollState)
 {
-  struct InternalPollState* internalPollState;
-
   assert(pollState != NULL);
 
-  internalPollState = pollState->internalPollState;
-  if ((internalPollState->numReadFDs +
-       internalPollState->numWriteAndTimeoutFDs) > 0)
+  if ((pollState->numReadFDs +
+       pollState->numWriteAndTimeoutFDs) > 0)
   {
     size_t i;
-    const int retVal = signalSafeKevent(
-                   internalPollState->kqueueFD,
-                   NULL, 0,
-                   internalPollState->keventArray,
-                   internalPollState->keventArrayCapacity,
-                   NULL);
+    const int retVal =
+      signalSafeKevent(
+        pollState->kqueueFD,
+        NULL, 0,
+        pollState->keventArray, pollState->keventArrayCapacity,
+        NULL);
     if (retVal < 0)
     {
       proxyLog("kevent wait error errno %d: %s",
@@ -236,20 +215,20 @@ const struct PollResult* blockingPoll(
       abort();
     }
     setPollResultNumReadyFDs(
-      &(internalPollState->pollResult),
+      &(pollState->pollResult),
       retVal);
     for (i = 0; i < retVal; ++i)
     {
       struct ReadyFDInfo* readyFDInfo =
-        &(internalPollState->pollResult.readyFDInfoArray[i]);
+        &(pollState->pollResult.readyFDInfoArray[i]);
       const struct kevent* readyKEvent =
-        &(internalPollState->keventArray[i]);
+        &(pollState->keventArray[i]);
       readyFDInfo->data = readyKEvent->udata;
       readyFDInfo->readyForRead = (readyKEvent->filter == EVFILT_READ);
       readyFDInfo->readyForWrite = (readyKEvent->filter == EVFILT_WRITE);
       readyFDInfo->readyForTimeout = (readyKEvent->filter == EVFILT_TIMER);
     }
-    return (&(internalPollState->pollResult));
+    return (&(pollState->pollResult));
   }
   return NULL;
 }
