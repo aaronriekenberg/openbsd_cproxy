@@ -2,6 +2,7 @@
 #define SOCKETUTIL_H
 
 #include <netdb.h>
+#include <stdbool.h>
 #include <sys/socket.h>
 
 struct AddrPortStrings
@@ -10,22 +11,22 @@ struct AddrPortStrings
   char portString[NI_MAXSERV];
 };
 
-extern int addressToNameAndPort(
+extern bool addressToNameAndPort(
   const struct sockaddr* address,
   const socklen_t addressSize,
   struct AddrPortStrings* addrPortStrings);
 
-extern int setSocketListening(
+extern bool setSocketListening(
   int socket);
 
-extern int setSocketReuseAddress(
+extern bool setSocketReuseAddress(
   int socket);
 
-extern int setSocketSplice(
+extern bool setSocketSplice(
   int fromSocket,
   int toSocket);
 
-extern int setBidirectionalSplice(
+extern bool setBidirectionalSplice(
   int socket1,
   int socket2);
 
@@ -35,8 +36,9 @@ extern off_t getSpliceBytesTransferred(
 extern int getSocketError(
   int socket);
 
-extern int signalSafeAccept(
+extern bool signalSafeAccept(
   int sockfd,
+  int* acceptFD,
   struct sockaddr* addr,
   socklen_t* addrlen);
 

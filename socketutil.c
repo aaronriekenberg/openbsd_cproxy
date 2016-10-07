@@ -6,7 +6,7 @@
 #include <netinet/tcp.h>
 #include <sys/socket.h>
 
-int addressToNameAndPort(
+bool addressToNameAndPort(
   const struct sockaddr* address,
   const socklen_t addressSize,
   struct AddrPortStrings* addrPortStrings)
@@ -21,39 +21,39 @@ int addressToNameAndPort(
                             (NI_NUMERICHOST | NI_NUMERICSERV))) != 0)
   {
     printf("getnameinfo error: %s\n", gai_strerror(retVal));
-    return -1;
+    return false;
   }
-  return 0;
+  return true;
 }
 
-int setSocketListening(
+bool setSocketListening(
   int socket)
 {
-  return listen(socket, SOMAXCONN);
+  return (listen(socket, SOMAXCONN) != -1);
 }
 
-int setSocketReuseAddress(
+bool setSocketReuseAddress(
   int socket)
 {
   int optval = 1;
-  return setsockopt(socket, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
+  return (setsockopt(socket, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) != -1);
 }
 
-int setSocketSplice(
+bool setSocketSplice(
   int fromSocket, 
   int toSocket)
 {
-  return setsockopt(fromSocket, SOL_SOCKET, SO_SPLICE, &toSocket, sizeof(toSocket));
+  return (setsockopt(fromSocket, SOL_SOCKET, SO_SPLICE, &toSocket, sizeof(toSocket)) != -1);
 }
 
-int setBidirectionalSplice(
+bool setBidirectionalSplice(
   int socket1,
   int socket2)
 {
-  int retVal;
+  bool retVal;
 
   retVal = setSocketSplice(socket1, socket2);
-  if (retVal < 0)
+  if (!retVal)
   {
     return retVal;
   }
@@ -70,7 +70,7 @@ off_t getSpliceBytesTransferred(
   socklen_t optlen = sizeof(bytesTransferred);
   int retVal =
     getsockopt(socket, SOL_SOCKET, SO_SPLICE, &bytesTransferred, &optlen);
-  if (retVal < 0)
+  if (retVal == -1)
   {
     bytesTransferred = 0;
   }
@@ -84,15 +84,16 @@ int getSocketError(
   socklen_t optlen = sizeof(optval);
   int retVal =
     getsockopt(socket, SOL_SOCKET, SO_ERROR, &optval, &optlen);
-  if (retVal < 0)
+  if (retVal == -1)
   {
     return retVal;
   }
   return optval;
 }
 
-int signalSafeAccept(
+bool signalSafeAccept(
   int sockfd,
+  int* acceptFD,
   struct sockaddr* addr,
   socklen_t* addrlen)
 {
@@ -102,8 +103,10 @@ int signalSafeAccept(
   {
     retVal = accept(sockfd, addr, addrlen);
     interrupted =
-      ((retVal < 0) &&
+      ((retVal == -1) &&
        (errno == EINTR));
   } while (interrupted);
-  return retVal;
+
+  *acceptFD = retVal;
+  return (retVal != -1);
 }

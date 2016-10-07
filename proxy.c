@@ -100,9 +100,9 @@ static void setupServerSockets(
       checkedCalloc(1, sizeof(struct ServerSocketInfo));
     serverSocketInfo->handleConnectionReadyFunction = handleServerSocketReady;
 
-    if (addressToNameAndPort(listenAddrInfo->ai_addr,
-                             listenAddrInfo->ai_addrlen,
-                             &serverAddrPortStrings) < 0)
+    if (!addressToNameAndPort(listenAddrInfo->ai_addr,
+                              listenAddrInfo->ai_addrlen,
+                              &serverAddrPortStrings))
     {
       proxyLog("error resolving server listen address");
       goto fail;
@@ -119,7 +119,7 @@ static void setupServerSockets(
       goto fail;
     }
 
-    if (setSocketReuseAddress(serverSocketInfo->socket) < 0)
+    if (!setSocketReuseAddress(serverSocketInfo->socket))
     {
       proxyLog("setSocketReuseAddress error on server socket %s:%s",
                serverAddrPortStrings.addrString,
@@ -137,7 +137,7 @@ static void setupServerSockets(
       goto fail;
     }
 
-    if (setSocketListening(serverSocketInfo->socket) < 0)
+    if (!setSocketListening(serverSocketInfo->socket))
     {
       proxyLog("listen error on server socket %s:%s",
                serverAddrPortStrings.addrString,
@@ -240,9 +240,9 @@ static bool getAddressesForClientSocket(
     goto fail;
   }
 
-  if (addressToNameAndPort((struct sockaddr*)&clientAddress,
-                           clientAddressSize,
-                           clientAddrPortStrings) < 0)
+  if (!addressToNameAndPort((struct sockaddr*)&clientAddress,
+                            clientAddressSize,
+                            clientAddrPortStrings))
   {
     proxyLog("error getting client address name and port");
     goto fail;
@@ -258,9 +258,9 @@ static bool getAddressesForClientSocket(
     goto fail;
   }
 
-  if (addressToNameAndPort((struct sockaddr*)&proxyServerAddress,
-                           proxyServerAddressSize,
-                           proxyServerAddrPortStrings) < 0)
+  if (!addressToNameAndPort((struct sockaddr*)&proxyServerAddress,
+                            proxyServerAddressSize,
+                            proxyServerAddrPortStrings))
   {
     proxyLog("error getting proxy server address name and port");
     goto fail;
@@ -336,7 +336,7 @@ static struct RemoteSocketResult createRemoteSocket(
   else
   {
     result.status = REMOTE_SOCKET_CONNECTED;
-    if (setBidirectionalSplice(clientSocket, result.remoteSocket) < 0)
+    if (!setBidirectionalSplice(clientSocket, result.remoteSocket))
     {
       proxyLog("splice setup error");
       goto failWithSocket;
@@ -353,9 +353,9 @@ static struct RemoteSocketResult createRemoteSocket(
     goto failWithSocket;
   }
 
-  if (addressToNameAndPort((struct sockaddr*)&proxyClientAddress,
-                           proxyClientAddressSize,
-                           proxyClientAddrPortStrings) < 0)
+  if (!addressToNameAndPort((struct sockaddr*)&proxyClientAddress,
+                            proxyClientAddressSize,
+                            proxyClientAddrPortStrings))
   {
     proxyLog("error getting proxy client address name and port");
     goto failWithSocket;
@@ -555,9 +555,9 @@ static struct ConnectionSocketInfo* handleConnectionReadyForWrite(
                connectionSocketInfo->serverAddrPortStrings.portString,
                connectionSocketInfo->socket);
 
-      if (setBidirectionalSplice(
-            connectionSocketInfo->socket,
-            relatedConnectionSocketInfo->socket) < 0)
+      if (!setBidirectionalSplice(
+             connectionSocketInfo->socket,
+             relatedConnectionSocketInfo->socket))
       {
         proxyLog("splice setup error");
         goto fail;
@@ -662,21 +662,21 @@ static enum HandleConnectionReadyResult handleServerSocketReady(
   struct PollState* pollState)
 {
   struct ServerSocketInfo* serverSocketInfo = (struct ServerSocketInfo*) abstractSocketInfo;
-  bool acceptError = false;
+  bool acceptSuccess = true;
   int i;
   for (i = 0;
-       (!acceptError) &&
+       (acceptSuccess) &&
        (i < MAX_OPERATIONS_FOR_ONE_FD);
        ++i)
   {
-    const int acceptedFD = signalSafeAccept(serverSocketInfo->socket, NULL, NULL);
-    if (acceptedFD < 0)
+    int acceptedFD;
+    acceptSuccess = signalSafeAccept(serverSocketInfo->socket, &acceptedFD, NULL, NULL);
+    if (!acceptSuccess)
     {
       if ((errno != EAGAIN) && (errno != EWOULDBLOCK))
       {
         proxyLog("accept error errno %d", errno);
       }
-      acceptError = true;
     }
     else
     {

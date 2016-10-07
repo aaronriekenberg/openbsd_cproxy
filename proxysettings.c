@@ -95,10 +95,10 @@ static struct addrinfo* parseRemoteAddrPort(
 {
   struct addrinfo* addressInfo = parseAddrPort(optarg);
 
-  if (addressToNameAndPort(
+  if (!addressToNameAndPort(
         addressInfo->ai_addr,
         addressInfo->ai_addrlen,
-        addrPortStrings) < 0)
+        addrPortStrings))
   {
     exit(1);
   }
