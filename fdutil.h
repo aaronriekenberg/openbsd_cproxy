@@ -1,7 +1,9 @@
 #ifndef FDUTIL_H
 #define FDUTIL_H
 
-extern int signalSafeClose(
+#include <stdbool.h>
+
+extern bool signalSafeClose(
   int fd);
 
 #endif

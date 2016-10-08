@@ -3,17 +3,17 @@
 #include <stdbool.h>
 #include <unistd.h>
 
-int signalSafeClose(
+bool signalSafeClose(
   int fd)
 {
   bool interrupted;
-  int retVal;
+  int closeRetVal;
   do
   {
-    retVal = close(fd);
+    closeRetVal = close(fd);
     interrupted =
-      ((retVal == -1) &&
+      ((closeRetVal == -1) &&
        (errno == EINTR));
   } while (interrupted);
-  return retVal;
+  return (closeRetVal != -1);
 }
