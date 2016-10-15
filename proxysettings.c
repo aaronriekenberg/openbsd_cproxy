@@ -1,6 +1,7 @@
 #include "log.h"
 #include "memutil.h"
 #include "proxysettings.h"
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -108,10 +109,11 @@ static struct addrinfo* parseRemoteAddrPort(
 
 static uint32_t parseConnectTimeoutMS(char* optarg)
 {
-  const int connectTimeoutMS = atoi(optarg);
-  if (connectTimeoutMS <= 0)
+  const char* errstr;
+  const long long connectTimeoutMS = strtonum(optarg, 1, UINT32_MAX, &errstr);
+  if (errstr != NULL)
   {
-    proxyLog("invalid connect timeout argument '%s'", optarg);
+    proxyLog("invalid connect timeout argument '%s': %s", optarg, errstr);
     exit(1);
   }
   return connectTimeoutMS;
