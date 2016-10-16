@@ -359,19 +359,19 @@ static void handleNewClientSocket(
   const struct ProxySettings* proxySettings,
   struct PollState* pollState)
 {
-  struct AddrPortStrings clientAddrPortStrings;
-  struct AddrPortStrings proxyServerAddrPortStrings;
-  struct AddrPortStrings proxyClientAddrPortStrings;
   struct RemoteSocketResult remoteSocketResult;
   struct ConnectionSocketInfo* connInfo1;
   struct ConnectionSocketInfo* connInfo2;
+
+  connInfo1 = checkedCalloc(1, sizeof(struct ConnectionSocketInfo));
+  connInfo2 = checkedCalloc(1, sizeof(struct ConnectionSocketInfo));
 
   if (!getAddressesForClientSocket(
         clientSocket,
         clientAddress,
         clientAddressSize,
-        &clientAddrPortStrings,
-        &proxyServerAddrPortStrings))
+        &(connInfo1->clientAddrPortStrings),
+        &(connInfo1->serverAddrPortStrings)))
   {
     goto fail;
   }
@@ -379,13 +379,12 @@ static void handleNewClientSocket(
   remoteSocketResult =
     createRemoteSocket(clientSocket,
                        proxySettings,
-                       &proxyClientAddrPortStrings);
+                       &(connInfo2->clientAddrPortStrings));
   if (remoteSocketResult.status == REMOTE_SOCKET_ERROR)
   {
     goto fail;
   }
 
-  connInfo1 = checkedCalloc(1, sizeof(struct ConnectionSocketInfo));
   connInfo1->handleConnectionReadyFunction = handleConnectionSocketReady;
   connInfo1->socket = clientSocket;
   connInfo1->type = CLIENT_TO_PROXY;
@@ -399,14 +398,7 @@ static void handleNewClientSocket(
     connInfo1->waitingForConnect = false;
     connInfo1->waitingForRead = false;
   }
-  memcpy(&(connInfo1->clientAddrPortStrings),
-         &clientAddrPortStrings,
-         sizeof(struct AddrPortStrings));
-  memcpy(&(connInfo1->serverAddrPortStrings),
-         &proxyServerAddrPortStrings,
-         sizeof(struct AddrPortStrings));
 
-  connInfo2 = checkedCalloc(1, sizeof(struct ConnectionSocketInfo));
   connInfo2->handleConnectionReadyFunction = handleConnectionSocketReady;
   connInfo2->socket = remoteSocketResult.remoteSocket;
   connInfo2->type = PROXY_TO_REMOTE;
@@ -420,9 +412,6 @@ static void handleNewClientSocket(
     connInfo2->waitingForConnect = true;
     connInfo2->waitingForRead = false;
   }
-  memcpy(&(connInfo2->clientAddrPortStrings),
-         &proxyClientAddrPortStrings,
-         sizeof(struct AddrPortStrings));
   memcpy(&(connInfo2->serverAddrPortStrings),
          &(proxySettings->remoteAddrPortStrings),
          sizeof(struct AddrPortStrings));
@@ -436,6 +425,8 @@ static void handleNewClientSocket(
   return;
 
 fail:
+  free(connInfo1);
+  free(connInfo2);
   signalSafeClose(clientSocket);
 }
 
