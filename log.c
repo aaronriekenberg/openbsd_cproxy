@@ -1,5 +1,4 @@
 #include "log.h"
-#include "memutil.h"
 #include "timeutil.h"
 #include <stdarg.h>
 #include <stdbool.h>

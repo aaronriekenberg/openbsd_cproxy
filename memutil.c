@@ -15,20 +15,6 @@ void* checkedCalloc(
   return retVal;
 }
 
-void* checkedRealloc(
-  void* ptr,
-  size_t size)
-{
-  void* retVal = realloc(ptr, size);
-  if ((!retVal) && size)
-  {
-    printf("realloc failed ptr %p size %ld\n",
-           ptr, (long)size);
-    abort();
-  }
-  return retVal;
-}
-
 void* checkedReallocarray(
   void *ptr,
   size_t nmemb,

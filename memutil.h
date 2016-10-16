@@ -7,10 +7,6 @@ extern void* checkedCalloc(
   size_t nmemb,
   size_t size);
 
-extern void* checkedRealloc(
-  void* ptr,
-  size_t size);
-
 extern void* checkedReallocarray(
   void *ptr,
   size_t nmemb,
