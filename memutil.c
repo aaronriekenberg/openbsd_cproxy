@@ -1,19 +1,6 @@
 #include "memutil.h"
 #include <stdio.h>
 
-void* checkedMalloc(
-  size_t size)
-{
-  void* retVal = malloc(size);
-  if ((!retVal) && size)
-  {
-    printf("malloc failed size %ld\n",
-           (long)size);
-    abort();
-  }
-  return retVal;
-}
-
 void* checkedCalloc(
   size_t nmemb,
   size_t size)

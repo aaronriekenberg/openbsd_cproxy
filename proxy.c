@@ -309,10 +309,8 @@ static struct RemoteSocketResult createRemoteSocket(
   }
   else if (connectRetVal < 0)
   {
-    char* socketErrorString = errnoToString(errno);
     proxyLog("remote socket connect error errno = %d: %s",
-             errno, socketErrorString);
-    free(socketErrorString);
+             errno, errnoToString(errno));
     goto failWithSocket;
   }
   else
@@ -331,7 +329,7 @@ static struct RemoteSocketResult createRemoteSocket(
         (struct sockaddr*)&proxyClientAddress,
         &proxyClientAddressSize) < 0)
   {
-    proxyLog("remote getsockname error errno = %d", errno);
+    proxyLog("remote getsockname error errno = %d: %s", errno, errnoToString(errno));
     goto failWithSocket;
   }
 
@@ -522,12 +520,10 @@ static struct ConnectionSocketInfo* handleConnectionReadyForWrite(
     }
     else if (socketError != 0)
     {
-      char* socketErrorString = errnoToString(socketError);
       proxyLog("async remote connect fd %d errno %d: %s",
                connectionSocketInfo->socket,
                socketError,
-               socketErrorString);
-      free(socketErrorString);
+               errnoToString(socketError));
       goto fail;
     }
     else

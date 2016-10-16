@@ -3,9 +3,6 @@
 
 #include <stdlib.h>
 
-extern void* checkedMalloc(
-  size_t size);
-
 extern void* checkedCalloc(
   size_t nmemb,
   size_t size);

@@ -1,19 +1,23 @@
 #include "errutil.h"
-#include "memutil.h"
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-char* errnoToString(int errnoToTranslate)
+const char* errnoToString(const int errnoToTranslate)
 {
-  char* buffer = checkedMalloc(80);
-  const int retVal = strerror_r(errnoToTranslate, buffer, 80);
-  if (retVal < 0)
+  const int previousErrno = errno;
+  const char* errorString;
+
+  errno = 0;
+  errorString = strerror(errnoToTranslate);
+  if (errno != 0)
   {
-    printf("strerror_r error retVal = %d errnoToTranslate = %d errno = %d\n",
-           retVal, errnoToTranslate, errno);
+    printf("strerror error errnoToTranslate = %d errno = %d\n",
+           errnoToTranslate, errno);
     abort();
   }
-  return buffer;
+
+  errno = previousErrno;
+  return errorString;
 }
