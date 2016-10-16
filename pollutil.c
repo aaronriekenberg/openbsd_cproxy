@@ -120,6 +120,7 @@ void removePollFDForRead(
   assert(pollState != NULL);
 
   EV_SET(&event, fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+
   retVal = signalSafeKevent(pollState->kqueueFD, &event, 1, NULL, 0, NULL);
   if (retVal < 0)
   {
