@@ -17,7 +17,7 @@ static void printUsageAndExit()
          "         -r <remote addr>:<remote port>\n"
          "         [-c <connect timeout milliseconds>]\n"
          "Arguments:\n"
-         "  -c <connect timeout milliseconds>: specify connection timeout in milliseconds\n"
+         "  -c <connect timeout milliseconds>: specify connection timeout\n"
          "  -l <local addr>:<local port>: specify listen address and port\n"
          "  -r <remote addr>:<remote port>: specify remote address and port\n");
   exit(1);
@@ -110,7 +110,7 @@ static struct addrinfo* parseRemoteAddrPort(
 static uint32_t parseConnectTimeoutMS(char* optarg)
 {
   const char* errstr;
-  const long long connectTimeoutMS = strtonum(optarg, 1, UINT32_MAX, &errstr);
+  const long long connectTimeoutMS = strtonum(optarg, 1, 60 * 1000, &errstr);
   if (errstr != NULL)
   {
     proxyLog("invalid connect timeout argument '%s': %s", optarg, errstr);
