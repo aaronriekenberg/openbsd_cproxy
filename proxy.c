@@ -104,7 +104,7 @@ static void setupServerSockets(
     serverSocketInfo->socket = socket(listenAddrInfo->ai_family,
                                       listenAddrInfo->ai_socktype | SOCK_NONBLOCK,
                                       listenAddrInfo->ai_protocol);
-    if (serverSocketInfo->socket < 0)
+    if (serverSocketInfo->socket == -1)
     {
       proxyLog("error creating server socket %s:%s",
                serverAddrPortStrings.addrString,
@@ -122,7 +122,7 @@ static void setupServerSockets(
 
     if (bind(serverSocketInfo->socket,
              listenAddrInfo->ai_addr,
-             listenAddrInfo->ai_addrlen) < 0)
+             listenAddrInfo->ai_addrlen) == -1)
     {
       proxyLog("bind error on server socket %s:%s",
                serverAddrPortStrings.addrString,
@@ -273,7 +273,7 @@ static struct RemoteSocketResult createRemoteSocket(
               proxySettings->remoteAddrInfo->ai_protocol)
   };
 
-  if (result.remoteSocket < 0)
+  if (result.remoteSocket == -1)
   {
     proxyLog("error creating remote socket errno = %d", errno);
     goto fail;
@@ -283,13 +283,13 @@ static struct RemoteSocketResult createRemoteSocket(
     result.remoteSocket,
     proxySettings->remoteAddrInfo->ai_addr,
     proxySettings->remoteAddrInfo->ai_addrlen);
-  if ((connectRetVal < 0) &&
+  if ((connectRetVal == -1) &&
       ((errno == EINPROGRESS) ||
        (errno == EINTR)))
   {
     result.status = REMOTE_SOCKET_IN_PROGRESS;
   }
-  else if (connectRetVal < 0)
+  else if (connectRetVal == -1)
   {
     proxyLog("remote socket connect error errno = %d: %s",
              errno, errnoToString(errno));
