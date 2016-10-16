@@ -27,44 +27,43 @@ bool addressToNameAndPort(
 }
 
 bool setSocketListening(
-  int socket)
+  const int socket)
 {
   return (listen(socket, SOMAXCONN) != -1);
 }
 
 bool setSocketReuseAddress(
-  int socket)
+  const int socket)
 {
   int optval = 1;
-  return (setsockopt(socket, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) != -1);
+  return (setsockopt(socket, SOL_SOCKET, SO_REUSEADDR,
+                     &optval, sizeof(optval)) != -1);
 }
 
 bool setSocketSplice(
-  int fromSocket, 
-  int toSocket)
+  const int fromSocket,
+  const int toSocket)
 {
-  return (setsockopt(fromSocket, SOL_SOCKET, SO_SPLICE, &toSocket, sizeof(toSocket)) != -1);
+  return (setsockopt(fromSocket, SOL_SOCKET, SO_SPLICE,
+                     &toSocket, sizeof(toSocket)) != -1);
 }
 
 bool setBidirectionalSplice(
-  int socket1,
-  int socket2)
+  const int socket1,
+  const int socket2)
 {
-  bool retVal;
+  bool retVal = setSocketSplice(socket1, socket2);
 
-  retVal = setSocketSplice(socket1, socket2);
-  if (!retVal)
+  if (retVal)
   {
-    return retVal;
+    retVal = setSocketSplice(socket2, socket1);
   }
-
-  retVal = setSocketSplice(socket2, socket1);
 
   return retVal;
 }
 
 off_t getSpliceBytesTransferred(
-  int socket)
+  const int socket)
 {
   off_t bytesTransferred;
   socklen_t optlen = sizeof(bytesTransferred);
@@ -78,7 +77,7 @@ off_t getSpliceBytesTransferred(
 }
 
 int getSocketError(
-  int socket)
+  const int socket)
 {
   int optval = 0;
   socklen_t optlen = sizeof(optval);
@@ -92,7 +91,7 @@ int getSocketError(
 }
 
 bool signalSafeAccept(
-  int sockfd,
+  const int sockfd,
   int* acceptFD,
   struct sockaddr* addr,
   socklen_t* addrlen)

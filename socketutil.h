@@ -17,27 +17,27 @@ extern bool addressToNameAndPort(
   struct AddrPortStrings* addrPortStrings);
 
 extern bool setSocketListening(
-  int socket);
+  const int socket);
 
 extern bool setSocketReuseAddress(
-  int socket);
+  const int socket);
 
 extern bool setSocketSplice(
-  int fromSocket,
-  int toSocket);
+  const int fromSocket,
+  const int toSocket);
 
 extern bool setBidirectionalSplice(
-  int socket1,
-  int socket2);
+  const int socket1,
+  const int socket2);
 
 extern off_t getSpliceBytesTransferred(
-  int socket);
+  const int socket);
 
 extern int getSocketError(
-  int socket);
+  const int socket);
 
 extern bool signalSafeAccept(
-  int sockfd,
+  const int sockfd,
   int* acceptFD,
   struct sockaddr* addr,
   socklen_t* addrlen);
