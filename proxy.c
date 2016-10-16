@@ -695,8 +695,6 @@ static void runProxy(
 {
   struct PollState* pollState;
 
-  setupRunLoopPledge();
-
   proxyLog("remote address = %s:%s",
            proxySettings->remoteAddrPortStrings.addrString,
            proxySettings->remoteAddrPortStrings.portString);
@@ -749,6 +747,9 @@ int main(
   setupInitialPledge();
 
   proxySettings = processArgs(argc, argv);
+
+  setupRunLoopPledge();
+
   runProxy(proxySettings);
 
   return 0;
