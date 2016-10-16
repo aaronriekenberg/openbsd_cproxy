@@ -366,6 +366,9 @@ static void handleNewClientSocket(
   connInfo1 = checkedCalloc(1, sizeof(struct ConnectionSocketInfo));
   connInfo2 = checkedCalloc(1, sizeof(struct ConnectionSocketInfo));
 
+  connInfo1->handleConnectionReadyFunction = handleConnectionSocketReady;
+  connInfo1->type = CLIENT_TO_PROXY;
+  connInfo1->socket = clientSocket;
   if (!getAddressesForClientSocket(
         clientSocket,
         clientAddress,
@@ -376,6 +379,8 @@ static void handleNewClientSocket(
     goto fail;
   }
 
+  connInfo2->handleConnectionReadyFunction = handleConnectionSocketReady;
+  connInfo2->type = PROXY_TO_REMOTE;
   remoteSocketResult =
     createRemoteSocket(clientSocket,
                        proxySettings,
@@ -384,34 +389,18 @@ static void handleNewClientSocket(
   {
     goto fail;
   }
-
-  connInfo1->handleConnectionReadyFunction = handleConnectionSocketReady;
-  connInfo1->socket = clientSocket;
-  connInfo1->type = CLIENT_TO_PROXY;
-  if (remoteSocketResult.status == REMOTE_SOCKET_CONNECTED)
-  {
-    connInfo1->waitingForConnect = false;
-    connInfo1->waitingForRead = true;
-  }
-  else if (remoteSocketResult.status == REMOTE_SOCKET_IN_PROGRESS)
-  {
-    connInfo1->waitingForConnect = false;
-    connInfo1->waitingForRead = false;
-  }
-
-  connInfo2->handleConnectionReadyFunction = handleConnectionSocketReady;
   connInfo2->socket = remoteSocketResult.remoteSocket;
-  connInfo2->type = PROXY_TO_REMOTE;
+
   if (remoteSocketResult.status == REMOTE_SOCKET_CONNECTED)
   {
-    connInfo2->waitingForConnect = false;
+    connInfo1->waitingForRead = true;
     connInfo2->waitingForRead = true;
   }
   else if (remoteSocketResult.status == REMOTE_SOCKET_IN_PROGRESS)
   {
     connInfo2->waitingForConnect = true;
-    connInfo2->waitingForRead = false;
   }
+
   memcpy(&(connInfo2->serverAddrPortStrings),
          &(proxySettings->remoteAddrPortStrings),
          sizeof(struct AddrPortStrings));
