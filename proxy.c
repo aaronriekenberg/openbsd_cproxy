@@ -76,14 +76,7 @@ static enum HandleConnectionReadyResult handleConnectionSocketReady(
 
 static void setupSignals()
 {
-  struct sigaction newAction;
-  memset(&newAction, 0, sizeof(struct sigaction));
-  newAction.sa_handler = SIG_IGN;
-  if (sigaction(SIGPIPE, &newAction, NULL) < 0)
-  {
-    proxyLog("sigaction error errno = %d", errno);
-    exit(1);
-  }
+  signal(SIGPIPE, SIG_IGN);
 }
 
 static void setupServerSockets(
@@ -663,13 +656,13 @@ static void runProxy(
 {
   struct PollState* pollState;
 
+  setupSignals();
+
   proxyLog("remote address = %s:%s",
            proxySettings->remoteAddrPortStrings.addrString,
            proxySettings->remoteAddrPortStrings.portString);
   proxyLog("connect timeout milliseconds = %d",
            proxySettings->connectTimeoutMS);
-
-  setupSignals();
 
   pollState = newPollState();
 
