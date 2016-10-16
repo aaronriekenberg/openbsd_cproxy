@@ -2,14 +2,14 @@
 #include <stdio.h>
 
 void* checkedCalloc(
-  size_t nmemb,
-  size_t size)
+  const size_t nmemb,
+  const size_t size)
 {
   void* retVal = calloc(nmemb, size);
-  if ((!retVal) && nmemb && size)
+  if (retVal == NULL)
   {
-    printf("calloc failed nmemb %ld size %ld\n",
-           (long)nmemb, (long)size);
+    printf("calloc failed nmemb %lld size %lld\n",
+           (long long)nmemb, (long long)size);
     abort();
   }
   return retVal;
@@ -17,14 +17,14 @@ void* checkedCalloc(
 
 void* checkedReallocarray(
   void *ptr,
-  size_t nmemb,
-  size_t size)
+  const size_t nmemb,
+  const size_t size)
 {
   void* retVal = reallocarray(ptr, nmemb, size);
-  if ((!retVal) && nmemb && size)
+  if (retVal == NULL)
   {
-    printf("reallocarray failed ptr %p nmemb %ld size %ld\n",
-           ptr, (long)nmemb, (long)size);
+    printf("reallocarray failed ptr %p nmemb %lld size %lld\n",
+           ptr, (long long)nmemb, (long long)size);
     abort();
   }
   return retVal;
