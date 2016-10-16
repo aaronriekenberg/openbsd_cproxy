@@ -344,7 +344,9 @@ static struct RemoteSocketResult createRemoteSocket(
   }
 
   proxyLog("connect %s proxy to remote %s:%s -> %s:%s (fd=%d)",
-           ((result.status == REMOTE_SOCKET_CONNECTED) ? "complete" : "starting"),
+           ((result.status == REMOTE_SOCKET_CONNECTED) ?
+            "complete" :
+            "starting"),
            proxyClientAddrPortStrings->addrString,
            proxyClientAddrPortStrings->portString,
            proxySettings->remoteAddrPortStrings.addrString,
@@ -545,16 +547,20 @@ static struct ConnectionSocketInfo* handleConnectionReadyForWrite(
         goto fail;
       }
 
-      removeConnectionSocketInfoFromPollState(pollState, connectionSocketInfo);
-      removeConnectionSocketInfoFromPollState(pollState, relatedConnectionSocketInfo);
+      removeConnectionSocketInfoFromPollState(
+        pollState, connectionSocketInfo);
+      removeConnectionSocketInfoFromPollState(
+        pollState, relatedConnectionSocketInfo);
 
       connectionSocketInfo->waitingForConnect = false;
       connectionSocketInfo->waitingForRead = true;
-      addConnectionSocketInfoToPollState(pollState, connectionSocketInfo, proxySettings);
+      addConnectionSocketInfoToPollState(
+        pollState, connectionSocketInfo, proxySettings);
 
       relatedConnectionSocketInfo->waitingForConnect = false;
       relatedConnectionSocketInfo->waitingForRead = true;
-      addConnectionSocketInfoToPollState(pollState, relatedConnectionSocketInfo, proxySettings);
+      addConnectionSocketInfoToPollState(
+        pollState, relatedConnectionSocketInfo, proxySettings);
     }
   }
 
@@ -585,7 +591,8 @@ static enum HandleConnectionReadyResult handleConnectionSocketReady(
   const struct ProxySettings* proxySettings,
   struct PollState* pollState)
 {
-  struct ConnectionSocketInfo* connectionSocketInfo = (struct ConnectionSocketInfo*) abstractSocketInfo;
+  struct ConnectionSocketInfo* connectionSocketInfo =
+    (struct ConnectionSocketInfo*) abstractSocketInfo;
   enum HandleConnectionReadyResult handleConnectionReadyResult =
     POLL_STATE_NOT_INVALIDATED_RESULT;
   struct ConnectionSocketInfo* pDisconnectSocketInfo = NULL;
@@ -643,7 +650,8 @@ static enum HandleConnectionReadyResult handleServerSocketReady(
   const struct ProxySettings* proxySettings,
   struct PollState* pollState)
 {
-  struct ServerSocketInfo* serverSocketInfo = (struct ServerSocketInfo*) abstractSocketInfo;
+  struct ServerSocketInfo* serverSocketInfo =
+    (struct ServerSocketInfo*) abstractSocketInfo;
   bool acceptSuccess = true;
   int i;
   for (i = 0;
@@ -652,10 +660,11 @@ static enum HandleConnectionReadyResult handleServerSocketReady(
        ++i)
   {
     int acceptedFD;
-    acceptSuccess = signalSafeAccept(serverSocketInfo->socket, &acceptedFD, NULL, NULL);
+    acceptSuccess = signalSafeAccept(
+      serverSocketInfo->socket, &acceptedFD, NULL, NULL);
     if (!acceptSuccess)
     {
-      if ((errno != EAGAIN) && (errno != EWOULDBLOCK))
+      if (errno != EWOULDBLOCK)
       {
         proxyLog("accept error errno %d", errno);
       }
@@ -680,7 +689,8 @@ static void runProxy(
   proxyLog("remote address = %s:%s",
            proxySettings->remoteAddrPortStrings.addrString,
            proxySettings->remoteAddrPortStrings.portString);
-  proxyLog("connect timeout milliseconds = %d", proxySettings->connectTimeoutMS);
+  proxyLog("connect timeout milliseconds = %d",
+           proxySettings->connectTimeoutMS);
 
   setupSignals();
 
