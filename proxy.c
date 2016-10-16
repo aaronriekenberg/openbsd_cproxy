@@ -42,6 +42,7 @@ struct ServerSocketInfo
 {
   HandleConnectionReadyFunction handleConnectionReadyFunction;
   int socket;
+  struct AddrPortStrings serverAddrPortStrings;
 };
 
 static enum HandleConnectionReadyResult handleServerSocketReady(
@@ -95,14 +96,13 @@ static void setupServerSockets(
   SIMPLEQ_FOREACH(pServerAddrInfo, &(proxySettings->serverAddrInfoList), entry)
   {
     const struct addrinfo* listenAddrInfo = pServerAddrInfo->addrinfo;
-    struct AddrPortStrings serverAddrPortStrings;
     struct ServerSocketInfo* serverSocketInfo =
       checkedCalloc(1, sizeof(struct ServerSocketInfo));
     serverSocketInfo->handleConnectionReadyFunction = handleServerSocketReady;
 
     if (!addressToNameAndPort(listenAddrInfo->ai_addr,
                               listenAddrInfo->ai_addrlen,
-                              &serverAddrPortStrings))
+                              &(serverSocketInfo->serverAddrPortStrings)))
     {
       proxyLog("error resolving server listen address");
       goto fail;
@@ -114,16 +114,16 @@ static void setupServerSockets(
     if (serverSocketInfo->socket < 0)
     {
       proxyLog("error creating server socket %s:%s",
-               serverAddrPortStrings.addrString,
-               serverAddrPortStrings.portString);
+               serverSocketInfo->serverAddrPortStrings.addrString,
+               serverSocketInfo->serverAddrPortStrings.portString);
       goto fail;
     }
 
     if (!setSocketReuseAddress(serverSocketInfo->socket))
     {
       proxyLog("setSocketReuseAddress error on server socket %s:%s",
-               serverAddrPortStrings.addrString,
-               serverAddrPortStrings.portString);
+               serverSocketInfo->serverAddrPortStrings.addrString,
+               serverSocketInfo->serverAddrPortStrings.portString);
       goto fail;
     }
 
@@ -132,22 +132,22 @@ static void setupServerSockets(
              listenAddrInfo->ai_addrlen) < 0)
     {
       proxyLog("bind error on server socket %s:%s",
-               serverAddrPortStrings.addrString,
-               serverAddrPortStrings.portString);
+               serverSocketInfo->serverAddrPortStrings.addrString,
+               serverSocketInfo->serverAddrPortStrings.portString);
       goto fail;
     }
 
     if (!setSocketListening(serverSocketInfo->socket))
     {
       proxyLog("listen error on server socket %s:%s",
-               serverAddrPortStrings.addrString,
-               serverAddrPortStrings.portString);
+               serverSocketInfo->serverAddrPortStrings.addrString,
+               serverSocketInfo->serverAddrPortStrings.portString);
       goto fail;
     }
 
     proxyLog("listening on %s:%s (fd=%d)", 
-             serverAddrPortStrings.addrString,
-             serverAddrPortStrings.portString,
+             serverSocketInfo->serverAddrPortStrings.addrString,
+             serverSocketInfo->serverAddrPortStrings.portString,
              serverSocketInfo->socket);
 
     addPollFDForRead(
@@ -202,53 +202,21 @@ static void removeConnectionSocketInfoFromPollState(
   }
 }
 
-static bool getAddressesForClientSocket(
+static bool getAddressForClientSocket(
   const int clientSocket,
   const struct sockaddr_storage* clientAddress,
   const socklen_t clientAddressSize,
-  struct AddrPortStrings* clientAddrPortStrings,
-  struct AddrPortStrings* proxyServerAddrPortStrings)
+  struct AddrPortStrings* clientAddrPortStrings)
 {
-  struct sockaddr_storage proxyServerAddress;
-  socklen_t proxyServerAddressSize;
-
   if (!addressToNameAndPort((const struct sockaddr*)clientAddress,
                             clientAddressSize,
                             clientAddrPortStrings))
   {
     proxyLog("error getting client address name and port");
-    goto fail;
+    return false;
   }
-
-  proxyServerAddressSize = sizeof(proxyServerAddress);
-  if (getsockname(
-        clientSocket, 
-        (struct sockaddr*)&proxyServerAddress,
-        &proxyServerAddressSize) < 0)
-  {
-    proxyLog("getsockname error errno = %d", errno);
-    goto fail;
-  }
-
-  if (!addressToNameAndPort((const struct sockaddr*)&proxyServerAddress,
-                            proxyServerAddressSize,
-                            proxyServerAddrPortStrings))
-  {
-    proxyLog("error getting proxy server address name and port");
-    goto fail;
-  }
-
-  proxyLog("connect client to proxy %s:%s -> %s:%s (fd=%d)",
-           clientAddrPortStrings->addrString,
-           clientAddrPortStrings->portString,
-           proxyServerAddrPortStrings->addrString,
-           proxyServerAddrPortStrings->portString,
-           clientSocket);
 
   return true;
-
-fail:
-  return false;
 }
 
 enum RemoteSocketStatus
@@ -356,6 +324,7 @@ static void handleNewClientSocket(
   const int clientSocket,
   const struct sockaddr_storage* clientAddress,
   const socklen_t clientAddressSize,
+  const struct AddrPortStrings* serverAddrPortStrings,
   const struct ProxySettings* proxySettings,
   struct PollState* pollState)
 {
@@ -369,15 +338,26 @@ static void handleNewClientSocket(
   connInfo1->handleConnectionReadyFunction = handleConnectionSocketReady;
   connInfo1->type = CLIENT_TO_PROXY;
   connInfo1->socket = clientSocket;
-  if (!getAddressesForClientSocket(
+
+  if (!getAddressForClientSocket(
         clientSocket,
         clientAddress,
         clientAddressSize,
-        &(connInfo1->clientAddrPortStrings),
-        &(connInfo1->serverAddrPortStrings)))
+        &(connInfo1->clientAddrPortStrings)))
   {
     goto fail;
   }
+
+  memcpy(&(connInfo1->serverAddrPortStrings),
+         serverAddrPortStrings,
+         sizeof(struct AddrPortStrings));
+
+  proxyLog("connect client to proxy %s:%s -> %s:%s (fd=%d)",
+           connInfo1->clientAddrPortStrings.addrString,
+           connInfo1->clientAddrPortStrings.portString,
+           connInfo1->serverAddrPortStrings.addrString,
+           connInfo1->serverAddrPortStrings.portString,
+           connInfo1->socket);
 
   connInfo2->handleConnectionReadyFunction = handleConnectionSocketReady;
   connInfo2->type = PROXY_TO_REMOTE;
@@ -391,6 +371,10 @@ static void handleNewClientSocket(
   }
   connInfo2->socket = remoteSocketResult.remoteSocket;
 
+  memcpy(&(connInfo2->serverAddrPortStrings),
+         &(proxySettings->remoteAddrPortStrings),
+         sizeof(struct AddrPortStrings));
+
   if (remoteSocketResult.status == REMOTE_SOCKET_CONNECTED)
   {
     connInfo1->waitingForRead = true;
@@ -400,10 +384,6 @@ static void handleNewClientSocket(
   {
     connInfo2->waitingForConnect = true;
   }
-
-  memcpy(&(connInfo2->serverAddrPortStrings),
-         &(proxySettings->remoteAddrPortStrings),
-         sizeof(struct AddrPortStrings));
 
   connInfo1->relatedConnectionSocketInfo = connInfo2;
   connInfo2->relatedConnectionSocketInfo = connInfo1;
@@ -650,6 +630,7 @@ static enum HandleConnectionReadyResult handleServerSocketReady(
       handleNewClientSocket(
         acceptedFD,
         &clientAddress, clientAddressSize,
+        &(serverSocketInfo->serverAddrPortStrings),
         proxySettings,
         pollState);
     }
