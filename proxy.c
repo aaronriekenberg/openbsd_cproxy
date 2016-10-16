@@ -162,24 +162,6 @@ fail:
   exit(1);
 }
 
-static void setupInitialPledge()
-{
-  if (pledge("stdio inet dns", NULL) == -1)
-  {
-    proxyLog("initial pledge failed");
-    abort();
-  }
-}
-
-static void setupRunLoopPledge()
-{
-  if (pledge("stdio inet", NULL) == -1)
-  {
-    proxyLog("run loop pledge failed");
-    abort();
-  }
-}
-
 static void addConnectionSocketInfoToPollState(
   struct PollState* pollState,
   struct ConnectionSocketInfo* connectionSocketInfo,
@@ -735,6 +717,24 @@ static void runProxy(
         pollStateInvalidated = true;
       }
     }
+  }
+}
+
+static void setupInitialPledge()
+{
+  if (pledge("stdio inet dns", NULL) == -1)
+  {
+    proxyLog("initial pledge failed");
+    abort();
+  }
+}
+
+static void setupRunLoopPledge()
+{
+  if (pledge("stdio inet", NULL) == -1)
+  {
+    proxyLog("run loop pledge failed");
+    abort();
   }
 }
 
