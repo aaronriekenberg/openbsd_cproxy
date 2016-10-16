@@ -223,7 +223,7 @@ static bool getClientSocketAddresses(
   serverAddressSize = sizeof(serverAddress);
   if (getsockname(clientSocket,
                   (struct sockaddr*)&serverAddress,
-                  &serverAddressSize) < 0)
+                  &serverAddressSize) == -1)
   {
     proxyLog("client getsockname error errno = %d: %s", errno, errnoToString(errno));
     goto fail;
@@ -316,7 +316,7 @@ static struct RemoteSocketResult createRemoteSocket(
   if (getsockname(
         result.remoteSocket,
         (struct sockaddr*)&proxyClientAddress,
-        &proxyClientAddressSize) < 0)
+        &proxyClientAddressSize) == -1)
   {
     proxyLog("remote getsockname error errno = %d: %s", errno, errnoToString(errno));
     goto failWithSocket;
