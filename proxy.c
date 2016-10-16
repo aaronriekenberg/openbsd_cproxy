@@ -202,23 +202,6 @@ static void removeConnectionSocketInfoFromPollState(
   }
 }
 
-static bool getAddressForClientSocket(
-  const int clientSocket,
-  const struct sockaddr_storage* clientAddress,
-  const socklen_t clientAddressSize,
-  struct AddrPortStrings* clientAddrPortStrings)
-{
-  if (!addressToNameAndPort((const struct sockaddr*)clientAddress,
-                            clientAddressSize,
-                            clientAddrPortStrings))
-  {
-    proxyLog("error getting client address name and port");
-    return false;
-  }
-
-  return true;
-}
-
 enum RemoteSocketStatus
 {
   REMOTE_SOCKET_ERROR,
@@ -339,12 +322,11 @@ static void handleNewClientSocket(
   connInfo1->type = CLIENT_TO_PROXY;
   connInfo1->socket = clientSocket;
 
-  if (!getAddressForClientSocket(
-        clientSocket,
-        clientAddress,
-        clientAddressSize,
-        &(connInfo1->clientAddrPortStrings)))
+  if (!addressToNameAndPort((const struct sockaddr*)clientAddress,
+                            clientAddressSize,
+                            &(connInfo1->clientAddrPortStrings)))
   {
+    proxyLog("error getting client address name and port");
     goto fail;
   }
 
