@@ -5,15 +5,28 @@
 #include <stdbool.h>
 #include <sys/socket.h>
 
+struct SockAddrInfo
+{
+  union
+  {
+    struct sockaddr sa;
+    struct sockaddr_storage saStorage;
+  };
+  socklen_t saSize;
+};
+
 struct AddrPortStrings
 {
   char addrString[NI_MAXHOST];
   char portString[NI_MAXSERV];
 };
 
-extern bool addressToNameAndPort(
-  const struct sockaddr* address,
-  const socklen_t addressSize,
+extern bool addrInfoToNameAndPort(
+  const struct addrinfo* addrinfo,
+  struct AddrPortStrings* addrPortStrings);
+
+extern bool sockAddrInfoToNameAndPort(
+  const struct SockAddrInfo* sockAddrInfo,
   struct AddrPortStrings* addrPortStrings);
 
 extern bool setSocketListening(
@@ -39,7 +52,10 @@ extern int getSocketError(
 extern bool signalSafeAccept(
   const int sockfd,
   int* acceptFD,
-  struct sockaddr* addr,
-  socklen_t* addrlen);
+  struct SockAddrInfo* sockAddrInfo);
+
+extern bool getSocketName(
+  const int socketFD,
+  struct SockAddrInfo* sockAddrInfo);
 
 #endif

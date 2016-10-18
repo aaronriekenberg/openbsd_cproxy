@@ -1,12 +1,19 @@
 #include "socketutil.h"
 #include <errno.h>
-#include <stdio.h>
 #include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <sys/socket.h>
 
-bool addressToNameAndPort(
+static void setSockAddrInfoSize(
+  struct SockAddrInfo* sockAddrInfo)
+{
+  sockAddrInfo->saSize = sizeof(sockAddrInfo->saStorage);
+}
+
+static bool sockAddrToNameAndPort(
   const struct sockaddr* address,
   const socklen_t addressSize,
   struct AddrPortStrings* addrPortStrings)
@@ -24,6 +31,24 @@ bool addressToNameAndPort(
     return false;
   }
   return true;
+}
+
+bool addrInfoToNameAndPort(
+  const struct addrinfo* addrinfo,
+  struct AddrPortStrings* addrPortStrings)
+{
+  return sockAddrToNameAndPort(addrinfo->ai_addr,
+                               addrinfo->ai_addrlen,
+                               addrPortStrings);
+}
+
+bool sockAddrInfoToNameAndPort(
+  const struct SockAddrInfo* sockAddrInfo,
+  struct AddrPortStrings* addrPortStrings)
+{
+  return sockAddrToNameAndPort(&(sockAddrInfo->sa),
+                               sockAddrInfo->saSize,
+                               addrPortStrings);
 }
 
 bool setSocketListening(
@@ -93,13 +118,20 @@ int getSocketError(
 bool signalSafeAccept(
   const int sockfd,
   int* acceptFD,
-  struct sockaddr* addr,
-  socklen_t* addrlen)
+  struct SockAddrInfo* sockAddrInfo)
 {
   bool interrupted;
   int retVal;
   do
   {
+    struct sockaddr* addr = NULL;
+    socklen_t* addrlen = NULL;
+    if (sockAddrInfo != NULL)
+    {
+      setSockAddrInfoSize(sockAddrInfo);
+      addr = &(sockAddrInfo->sa);
+      addrlen = &(sockAddrInfo->saSize);
+    }
     retVal = accept(sockfd, addr, addrlen);
     interrupted =
       ((retVal == -1) &&
@@ -107,5 +139,18 @@ bool signalSafeAccept(
   } while (interrupted);
 
   *acceptFD = retVal;
+  return (retVal != -1);
+}
+
+bool getSocketName(
+  const int socketFD,
+  struct SockAddrInfo* sockAddrInfo)
+{
+  int retVal;
+
+  setSockAddrInfoSize(sockAddrInfo);
+
+  retVal = getsockname(socketFD, &(sockAddrInfo->sa), &(sockAddrInfo->saSize));
+
   return (retVal != -1);
 }
