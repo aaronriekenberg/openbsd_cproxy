@@ -79,10 +79,7 @@ bool bindSocket(
   const int socket,
   const struct addrinfo* addrinfo)
 {
-  const int retVal = bind(socket,
-                          addrinfo->ai_addr,
-                          addrinfo->ai_addrlen);
-  return (retVal != -1);
+  return (bind(socket, addrinfo->ai_addr, addrinfo->ai_addrlen) != -1);
 }
 
 bool setSocketSplice(
