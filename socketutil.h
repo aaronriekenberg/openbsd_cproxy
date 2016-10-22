@@ -68,9 +68,9 @@ extern bool getSocketName(
 
 enum ConnectSocketResult
 {
+  CONNECT_SOCKET_RESULT_ERROR,
   CONNECT_SOCKET_RESULT_CONNECTED,
-  CONNECT_SOCKET_RESULT_IN_PROGRESS,
-  CONNECT_SOCKET_RESULT_ERROR
+  CONNECT_SOCKET_RESULT_IN_PROGRESS
 };
 
 extern enum ConnectSocketResult connectSocket(
