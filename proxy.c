@@ -209,7 +209,8 @@ static bool getClientSocketAddresses(
   if (!getSocketName(clientSocket,
                      &serverSockAddrInfo))
   {
-    proxyLog("client getsockname error errno = %d: %s", errno, errnoToString(errno));
+    proxyLog("client getsockname error errno = %d: %s",
+             errno, errnoToString(errno));
     goto fail;
   }
 
