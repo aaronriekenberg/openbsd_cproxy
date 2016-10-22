@@ -696,9 +696,9 @@ int main(
 
   setupInitialPledge();
 
-  proxySettings = processArgs(argc, argv);
-
   setupSignals();
+
+  proxySettings = processArgs(argc, argv);
 
   setupRunLoopPledge();
 
