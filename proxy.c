@@ -603,7 +603,7 @@ static enum HandleConnectionReadyResult handleServerSocketReady(
     int acceptedFD;
     struct SockAddrInfo clientSockAddrInfo;
 
-    acceptSuccess = signalSafeAccept(
+    acceptSuccess = acceptSocket(
       serverSocketInfo->socket,
       &acceptedFD,
       &clientSockAddrInfo);

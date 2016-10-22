@@ -132,8 +132,8 @@ int getSocketError(
   return optval;
 }
 
-bool signalSafeAccept(
-  const int sockfd,
+bool acceptSocket(
+  const int socketFD,
   int* acceptFD,
   struct SockAddrInfo* sockAddrInfo)
 {
@@ -149,7 +149,7 @@ bool signalSafeAccept(
       addr = &(sockAddrInfo->sa);
       addrlen = &(sockAddrInfo->saSize);
     }
-    retVal = accept(sockfd, addr, addrlen);
+    retVal = accept(socketFD, addr, addrlen);
     interrupted =
       ((retVal == -1) &&
        (errno == EINTR));

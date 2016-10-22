@@ -57,8 +57,8 @@ extern off_t getSpliceBytesTransferred(
 extern int getSocketError(
   const int socket);
 
-extern bool signalSafeAccept(
-  const int sockfd,
+extern bool acceptSocket(
+  const int socketFD,
   int* acceptFD,
   struct SockAddrInfo* sockAddrInfo);
 
