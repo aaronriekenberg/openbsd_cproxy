@@ -66,4 +66,15 @@ extern bool getSocketName(
   const int socketFD,
   struct SockAddrInfo* sockAddrInfo);
 
+enum ConnectSocketResult
+{
+  CONNECT_SOCKET_RESULT_CONNECTED,
+  CONNECT_SOCKET_RESULT_IN_PROGRESS,
+  CONNECT_SOCKET_RESULT_ERROR
+};
+
+extern enum ConnectSocketResult connectSocket(
+  const int socket,
+  const struct addrinfo* addrinfo);
+
 #endif

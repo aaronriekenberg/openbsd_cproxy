@@ -163,11 +163,36 @@ bool getSocketName(
   const int socketFD,
   struct SockAddrInfo* sockAddrInfo)
 {
-  int retVal;
-
   setSockAddrInfoSize(sockAddrInfo);
 
-  retVal = getsockname(socketFD, &(sockAddrInfo->sa), &(sockAddrInfo->saSize));
+  return (getsockname(socketFD,
+                      &(sockAddrInfo->sa),
+                      &(sockAddrInfo->saSize)) != -1);
+}
 
-  return (retVal != -1);
+enum ConnectSocketResult connectSocket(
+  const int socket,
+  const struct addrinfo* addrinfo)
+{
+  enum ConnectSocketResult connectSocketResult;
+
+  if (connect(socket,
+              addrinfo->ai_addr,
+              addrinfo->ai_addrlen) == -1)
+  {
+    if ((errno == EINPROGRESS) || (errno == EINTR))
+    {
+      connectSocketResult = CONNECT_SOCKET_RESULT_IN_PROGRESS;
+    }
+    else
+    {
+      connectSocketResult = CONNECT_SOCKET_RESULT_ERROR;
+    }
+  }
+  else
+  {
+    connectSocketResult = CONNECT_SOCKET_RESULT_CONNECTED;
+  }
+
+  return connectSocketResult;
 }

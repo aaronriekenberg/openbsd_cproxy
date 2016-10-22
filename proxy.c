@@ -251,7 +251,7 @@ static struct RemoteSocketResult createRemoteSocket(
   const struct ProxySettings* proxySettings,
   struct AddrPortStrings* proxyClientAddrPortStrings)
 {
-  int connectRetVal;
+  enum ConnectSocketResult connectSocketResult;
   struct SockAddrInfo proxyClientSockAddrInfo;
   struct RemoteSocketResult result;
   result.status = REMOTE_SOCKET_ERROR;
@@ -264,17 +264,13 @@ static struct RemoteSocketResult createRemoteSocket(
     goto fail;
   }
 
-  connectRetVal = connect(
-    result.remoteSocket,
-    proxySettings->remoteAddrInfo->ai_addr,
-    proxySettings->remoteAddrInfo->ai_addrlen);
-  if ((connectRetVal == -1) &&
-      ((errno == EINPROGRESS) ||
-       (errno == EINTR)))
+  connectSocketResult = connectSocket(result.remoteSocket,
+                                      proxySettings->remoteAddrInfo);
+  if (connectSocketResult == CONNECT_SOCKET_RESULT_IN_PROGRESS)
   {
     result.status = REMOTE_SOCKET_IN_PROGRESS;
   }
-  else if (connectRetVal == -1)
+  else if (connectSocketResult == CONNECT_SOCKET_RESULT_ERROR)
   {
     proxyLog("remote socket connect error errno = %d: %s",
              errno, errnoToString(errno));
