@@ -74,11 +74,6 @@ static enum HandleConnectionReadyResult handleConnectionSocketReady(
   const struct ProxySettings* proxySettings,
   struct PollState* pollState);
 
-static void setupSignals()
-{
-  signal(SIGPIPE, SIG_IGN);
-}
-
 static void setupServerSockets(
   const struct ProxySettings* proxySettings,
   struct PollState* pollState)
@@ -633,8 +628,6 @@ static void runProxy(
 {
   struct PollState* pollState;
 
-  setupSignals();
-
   proxyLog("remote address = %s:%s",
            proxySettings->remoteAddrPortStrings.addrString,
            proxySettings->remoteAddrPortStrings.portString);
@@ -686,6 +679,11 @@ static void setupInitialPledge()
   }
 }
 
+static void setupSignals()
+{
+  signal(SIGPIPE, SIG_IGN);
+}
+
 static void setupRunLoopPledge()
 {
   if (pledge("stdio inet", NULL) == -1)
@@ -704,6 +702,8 @@ int main(
   setupInitialPledge();
 
   proxySettings = processArgs(argc, argv);
+
+  setupSignals();
 
   setupRunLoopPledge();
 
