@@ -51,6 +51,16 @@ bool sockAddrInfoToNameAndPort(
                                addrPortStrings);
 }
 
+bool createNonBlockingSocket(
+  const struct addrinfo* addrinfo,
+  int* socketFD)
+{
+  *socketFD = socket(addrinfo->ai_family,
+                     addrinfo->ai_socktype | SOCK_NONBLOCK,
+                     addrinfo->ai_protocol);
+  return ((*socketFD) != -1);
+}
+
 bool setSocketListening(
   const int socket)
 {

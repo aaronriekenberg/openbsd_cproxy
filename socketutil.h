@@ -29,6 +29,10 @@ extern bool sockAddrInfoToNameAndPort(
   const struct SockAddrInfo* sockAddrInfo,
   struct AddrPortStrings* addrPortStrings);
 
+extern bool createNonBlockingSocket(
+  const struct addrinfo* addrinfo,
+  int* socketFD);
+
 extern bool setSocketListening(
   const int socket);
 

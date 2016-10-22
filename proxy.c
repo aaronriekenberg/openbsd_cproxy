@@ -100,10 +100,9 @@ static void setupServerSockets(
       goto fail;
     }
 
-    serverSocketInfo->socket = socket(listenAddrInfo->ai_family,
-                                      listenAddrInfo->ai_socktype | SOCK_NONBLOCK,
-                                      listenAddrInfo->ai_protocol);
-    if (serverSocketInfo->socket == -1)
+    if (!createNonBlockingSocket(
+           listenAddrInfo,
+           &(serverSocketInfo->socket)))
     {
       proxyLog("error creating server socket %s:%s",
                serverAddrPortStrings.addrString,
@@ -256,16 +255,12 @@ static struct RemoteSocketResult createRemoteSocket(
 {
   int connectRetVal;
   struct SockAddrInfo proxyClientSockAddrInfo;
-  struct RemoteSocketResult result =
-  {
-    .status = REMOTE_SOCKET_ERROR,
-    .remoteSocket =
-       socket(proxySettings->remoteAddrInfo->ai_family,
-              proxySettings->remoteAddrInfo->ai_socktype | SOCK_NONBLOCK,
-              proxySettings->remoteAddrInfo->ai_protocol)
-  };
+  struct RemoteSocketResult result;
+  result.status = REMOTE_SOCKET_ERROR;
 
-  if (result.remoteSocket == -1)
+  if (!createNonBlockingSocket(
+         proxySettings->remoteAddrInfo,
+         &(result.remoteSocket)))
   {
     proxyLog("error creating remote socket errno = %d", errno);
     goto fail;
