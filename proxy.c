@@ -289,7 +289,8 @@ static struct RemoteSocketResult createRemoteSocket(
   if (!getSocketName(result.remoteSocket, 
                      &proxyClientSockAddrInfo))
   {
-    proxyLog("remote getsockname error errno = %d: %s", errno, errnoToString(errno));
+    proxyLog("remote getsockname error errno = %d: %s",
+             errno, errnoToString(errno));
     goto failWithSocket;
   }
 
