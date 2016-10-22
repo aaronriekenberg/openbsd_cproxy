@@ -612,7 +612,7 @@ static enum HandleConnectionReadyResult handleServerSocketReady(
     }
     else
     {
-      proxyLog("accepted fd %d", acceptedFD);
+      proxyLog("accept fd %d", acceptedFD);
       handleNewClientSocket(
         acceptedFD,
         &clientSockAddrInfo,
