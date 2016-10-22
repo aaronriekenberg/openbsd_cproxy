@@ -39,6 +39,10 @@ extern bool setSocketListening(
 extern bool setSocketReuseAddress(
   const int socket);
 
+extern bool bindSocket(
+  const int socket,
+  const struct addrinfo* addrinfo);
+
 extern bool setSocketSplice(
   const int fromSocket,
   const int toSocket);

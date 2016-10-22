@@ -118,9 +118,7 @@ static void setupServerSockets(
       goto fail;
     }
 
-    if (bind(serverSocketInfo->socket,
-             listenAddrInfo->ai_addr,
-             listenAddrInfo->ai_addrlen) == -1)
+    if (!bindSocket(serverSocketInfo->socket, listenAddrInfo))
     {
       proxyLog("bind error on server socket %s:%s",
                serverAddrPortStrings.addrString,

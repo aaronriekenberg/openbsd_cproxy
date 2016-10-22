@@ -75,6 +75,16 @@ bool setSocketReuseAddress(
                      &optval, sizeof(optval)) != -1);
 }
 
+bool bindSocket(
+  const int socket,
+  const struct addrinfo* addrinfo)
+{
+  const int retVal = bind(socket,
+                          addrinfo->ai_addr,
+                          addrinfo->ai_addrlen);
+  return (retVal != -1);
+}
+
 bool setSocketSplice(
   const int fromSocket,
   const int toSocket)
