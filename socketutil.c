@@ -18,19 +18,18 @@ static bool sockAddrToNameAndPort(
   const socklen_t addressSize,
   struct AddrPortStrings* addrPortStrings)
 {
-  int retVal;
-  if ((retVal = getnameinfo(address,
-                            addressSize,
-                            addrPortStrings->addrString,
-                            NI_MAXHOST,
-                            addrPortStrings->portString,
-                            NI_MAXSERV,
-                            (NI_NUMERICHOST | NI_NUMERICSERV))) != 0)
+  const int retVal = getnameinfo(address,
+                                 addressSize,
+                                 addrPortStrings->addrString,
+                                 NI_MAXHOST,
+                                 addrPortStrings->portString,
+                                 NI_MAXSERV,
+                                 (NI_NUMERICHOST | NI_NUMERICSERV));
+  if (retVal != 0)
   {
     printf("getnameinfo error: %s\n", gai_strerror(retVal));
-    return false;
   }
-  return true;
+  return (retVal == 0);
 }
 
 bool addrInfoToNameAndPort(
