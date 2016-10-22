@@ -196,40 +196,47 @@ void removePollFDForWriteAndTimeout(
 const struct PollResult* blockingPoll(
   struct PollState* pollState)
 {
+  size_t i;
+  int retVal;
+
   assert(pollState != NULL);
 
   if ((pollState->numReadFDs +
-       pollState->numWriteAndTimeoutFDs) > 0)
+       pollState->numWriteAndTimeoutFDs) <= 0)
   {
-    size_t i;
-    const int retVal =
-      signalSafeKevent(
-        pollState->kqueueFD,
-        NULL, 0,
-        pollState->keventArray, pollState->keventArrayCapacity,
-        NULL);
-    if (retVal < 0)
-    {
-      proxyLog("kevent wait error errno %d: %s",
-               errno,
-               errnoToString(errno));
-      abort();
-    }
-    setPollResultNumReadyFDs(
-      &(pollState->pollResult),
-      retVal);
-    for (i = 0; i < retVal; ++i)
-    {
-      struct ReadyFDInfo* readyFDInfo =
-        &(pollState->pollResult.readyFDInfoArray[i]);
-      const struct kevent* readyKEvent =
-        &(pollState->keventArray[i]);
-      readyFDInfo->data = readyKEvent->udata;
-      readyFDInfo->readyForRead = (readyKEvent->filter == EVFILT_READ);
-      readyFDInfo->readyForWrite = (readyKEvent->filter == EVFILT_WRITE);
-      readyFDInfo->readyForTimeout = (readyKEvent->filter == EVFILT_TIMER);
-    }
-    return (&(pollState->pollResult));
+    proxyLog("blockingPool called with no events registered");
+    abort();
   }
-  return NULL;
+
+  retVal = signalSafeKevent(
+    pollState->kqueueFD,
+    NULL, 0,
+    pollState->keventArray, pollState->keventArrayCapacity,
+    NULL);
+
+  if (retVal < 0)
+  {
+    proxyLog("kevent wait error errno %d: %s",
+             errno,
+             errnoToString(errno));
+    abort();
+  }
+
+  setPollResultNumReadyFDs(
+    &(pollState->pollResult),
+    retVal);
+
+  for (i = 0; i < retVal; ++i)
+  {
+    struct ReadyFDInfo* readyFDInfo =
+      &(pollState->pollResult.readyFDInfoArray[i]);
+    const struct kevent* readyKEvent =
+      &(pollState->keventArray[i]);
+    readyFDInfo->data = readyKEvent->udata;
+    readyFDInfo->readyForRead = (readyKEvent->filter == EVFILT_READ);
+    readyFDInfo->readyForWrite = (readyKEvent->filter == EVFILT_WRITE);
+    readyFDInfo->readyForTimeout = (readyKEvent->filter == EVFILT_TIMER);
+  }
+
+  return (&(pollState->pollResult));
 }

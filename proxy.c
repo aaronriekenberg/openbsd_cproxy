@@ -645,11 +645,6 @@ static void runProxy(
     size_t i;
     bool pollStateInvalidated = false;
     const struct PollResult* pollResult = blockingPoll(pollState);
-    if (!pollResult)
-    {
-      proxyLog("blockingPoll failed");
-      abort();
-    }
 
     for (i = 0; 
          (!pollStateInvalidated) &&
