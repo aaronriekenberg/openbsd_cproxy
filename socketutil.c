@@ -152,7 +152,6 @@ enum AcceptSocketResult acceptSocket(
   int retVal;
 
   assert(acceptFD != NULL);
-  assert(sockAddrInfo != NULL);
 
   do
   {
