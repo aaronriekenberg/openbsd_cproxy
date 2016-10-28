@@ -415,7 +415,7 @@ static void destroyConnection(
   free(connectionSocketInfo);
   connectionSocketInfo = NULL;
 
-  if (relatedConnectionSocketInfo)
+  if (relatedConnectionSocketInfo != NULL)
   {
     relatedConnectionSocketInfo->relatedConnectionSocketInfo = NULL;
     destroyConnection(
