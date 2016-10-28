@@ -1,4 +1,5 @@
 #include "socketutil.h"
+#include <assert.h>
 #include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -35,6 +36,9 @@ bool addrInfoToNameAndPort(
   const struct addrinfo* addrinfo,
   struct AddrPortStrings* addrPortStrings)
 {
+  assert(addrinfo != NULL);
+  assert(addrPortStrings != NULL);
+
   return sockAddrToNameAndPort(addrinfo->ai_addr,
                                addrinfo->ai_addrlen,
                                addrPortStrings);
@@ -44,6 +48,9 @@ bool sockAddrInfoToNameAndPort(
   const struct SockAddrInfo* sockAddrInfo,
   struct AddrPortStrings* addrPortStrings)
 {
+  assert(sockAddrInfo != NULL);
+  assert(addrPortStrings != NULL);
+
   return sockAddrToNameAndPort(&(sockAddrInfo->sa),
                                sockAddrInfo->saSize,
                                addrPortStrings);
@@ -53,6 +60,9 @@ bool createNonBlockingSocket(
   const struct addrinfo* addrinfo,
   int* socketFD)
 {
+  assert(addrinfo != NULL);
+  assert(socketFD != NULL);
+
   *socketFD = socket(addrinfo->ai_family,
                      addrinfo->ai_socktype | SOCK_NONBLOCK,
                      addrinfo->ai_protocol);
@@ -77,6 +87,8 @@ bool bindSocket(
   const int socket,
   const struct addrinfo* addrinfo)
 {
+  assert(addrinfo != NULL);
+
   return (bind(socket, addrinfo->ai_addr, addrinfo->ai_addrlen) != -1);
 }
 
@@ -139,6 +151,9 @@ enum AcceptSocketResult acceptSocket(
   bool interrupted;
   int retVal;
 
+  assert(acceptFD != NULL);
+  assert(sockAddrInfo != NULL);
+
   do
   {
     struct sockaddr* addr = NULL;
@@ -179,6 +194,8 @@ bool getSocketName(
   const int socketFD,
   struct SockAddrInfo* sockAddrInfo)
 {
+  assert(sockAddrInfo != NULL);
+
   setSockAddrInfoSize(sockAddrInfo);
 
   return (getsockname(socketFD,
@@ -191,6 +208,8 @@ enum ConnectSocketResult connectSocket(
   const struct addrinfo* addrinfo)
 {
   enum ConnectSocketResult connectSocketResult;
+
+  assert(addrinfo != NULL);
 
   if (connect(socket,
               addrinfo->ai_addr,
