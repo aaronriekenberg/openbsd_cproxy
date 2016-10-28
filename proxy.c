@@ -588,29 +588,26 @@ static enum HandleConnectionReadyResult handleServerSocketReady(
 {
   struct ServerSocketInfo* serverSocketInfo =
     (struct ServerSocketInfo*) abstractSocketInfo;
-  bool acceptSuccess = true;
+  enum AcceptSocketResult acceptSocketResult = ACCEPT_SOCKET_RESULT_SUCCESS;
   int i;
   for (i = 0;
-       (acceptSuccess) &&
+       (acceptSocketResult == ACCEPT_SOCKET_RESULT_SUCCESS) &&
        (i < MAX_OPERATIONS_FOR_ONE_FD);
        ++i)
   {
     int acceptedFD;
     struct SockAddrInfo clientSockAddrInfo;
 
-    acceptSuccess = acceptSocket(
+    acceptSocketResult = acceptSocket(
       serverSocketInfo->socket,
       &acceptedFD,
       &clientSockAddrInfo);
 
-    if (!acceptSuccess)
+    if (acceptSocketResult == ACCEPT_SOCKET_RESULT_ERROR)
     {
-      if (errno != EWOULDBLOCK)
-      {
-        proxyLog("accept error errno %d", errno);
-      }
+      proxyLog("accept error errno %d: %s", errno, errnoToString(errno));
     }
-    else
+    else if (acceptSocketResult == ACCEPT_SOCKET_RESULT_SUCCESS)
     {
       proxyLog("accept fd %d", acceptedFD);
       handleNewClientSocket(

@@ -127,13 +127,15 @@ int getSocketError(
   return optval;
 }
 
-bool acceptSocket(
+enum AcceptSocketResult acceptSocket(
   const int socketFD,
   int* acceptFD,
   struct SockAddrInfo* sockAddrInfo)
 {
+  enum AcceptSocketResult acceptSocketResult;
   bool interrupted;
   int retVal;
+
   do
   {
     struct sockaddr* addr = NULL;
@@ -150,8 +152,24 @@ bool acceptSocket(
        (errno == EINTR));
   } while (interrupted);
 
-  *acceptFD = retVal;
-  return (retVal != -1);
+  if (retVal == -1)
+  {
+    if (errno == EWOULDBLOCK)
+    {
+      acceptSocketResult = ACCEPT_SOCKET_RESULT_WOULD_BLOCK;
+    }
+    else
+    {
+      acceptSocketResult = ACCEPT_SOCKET_RESULT_ERROR;
+    }
+  }
+  else
+  {
+    *acceptFD = retVal;
+    acceptSocketResult = ACCEPT_SOCKET_RESULT_SUCCESS;
+  }
+
+  return acceptSocketResult;
 }
 
 bool getSocketName(
