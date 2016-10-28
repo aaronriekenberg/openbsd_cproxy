@@ -7,7 +7,10 @@
 #include <netinet/tcp.h>
 #include <sys/socket.h>
 
-#define SET_SOCKADDRINFO_SIZE(sockAddrInfo) { sockAddrInfo->saSize = sizeof(struct sockaddr_storage); }
+static void setSockAddrInfoSize(struct SockAddrInfo* sockAddrInfo)
+{
+  sockAddrInfo->saSize = sizeof(struct sockaddr_storage);
+}
 
 static bool sockAddrToNameAndPort(
   const struct sockaddr* address,
@@ -142,7 +145,7 @@ enum AcceptSocketResult acceptSocket(
     socklen_t* addrlen = NULL;
     if (sockAddrInfo != NULL)
     {
-      SET_SOCKADDRINFO_SIZE(sockAddrInfo);
+      setSockAddrInfoSize(sockAddrInfo);
       addr = &(sockAddrInfo->sa);
       addrlen = &(sockAddrInfo->saSize);
     }
@@ -176,7 +179,7 @@ bool getSocketName(
   const int socketFD,
   struct SockAddrInfo* sockAddrInfo)
 {
-  SET_SOCKADDRINFO_SIZE(sockAddrInfo);
+  setSockAddrInfoSize(sockAddrInfo);
 
   return (getsockname(socketFD,
                       &(sockAddrInfo->sa),
