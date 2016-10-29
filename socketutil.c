@@ -21,9 +21,9 @@ static bool sockAddrToNameAndPort(
   const int retVal = getnameinfo(address,
                                  addressSize,
                                  addrPortStrings->addrString,
-                                 NI_MAXHOST,
+                                 MAX_ADDR_STRING_LENGTH,
                                  addrPortStrings->portString,
-                                 NI_MAXSERV,
+                                 MAX_PORT_STRING_LENGTH,
                                  (NI_NUMERICHOST | NI_NUMERICSERV));
   if (retVal != 0)
   {

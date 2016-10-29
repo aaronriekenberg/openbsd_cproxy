@@ -15,10 +15,13 @@ struct SockAddrInfo
   socklen_t saSize;
 };
 
+#define MAX_ADDR_STRING_LENGTH (50)
+#define MAX_PORT_STRING_LENGTH (6)
+
 struct AddrPortStrings
 {
-  char addrString[NI_MAXHOST];
-  char portString[NI_MAXSERV];
+  char addrString[MAX_ADDR_STRING_LENGTH];
+  char portString[MAX_PORT_STRING_LENGTH];
 };
 
 extern bool addrInfoToNameAndPort(
