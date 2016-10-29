@@ -124,7 +124,7 @@ const struct ProxySettings* processArgs(
   int retVal;
   struct ServerAddrInfo* pServerAddrInfo;
   struct ProxySettings* proxySettings =
-    checkedCalloc(1, sizeof(struct ProxySettings));
+    checkedCallocOne(sizeof(struct ProxySettings));
 
   proxySettings->connectTimeoutMS = DEFAULT_CONNECT_TIMEOUT_MS;
   SIMPLEQ_INIT(&(proxySettings->serverAddrInfoList));
@@ -138,7 +138,7 @@ const struct ProxySettings* processArgs(
       break;
 
     case 'l':
-      pServerAddrInfo = checkedCalloc(1, sizeof(struct ServerAddrInfo));
+      pServerAddrInfo = checkedCallocOne(sizeof(struct ServerAddrInfo));
       pServerAddrInfo->addrinfo = parseAddrPort(optarg);
       SIMPLEQ_INSERT_TAIL(
         &(proxySettings->serverAddrInfoList),

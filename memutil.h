@@ -3,8 +3,7 @@
 
 #include <stdlib.h>
 
-extern void* checkedCalloc(
-  const size_t nmemb,
+extern void* checkedCallocOne(
   const size_t size);
 
 extern void* checkedReallocarray(

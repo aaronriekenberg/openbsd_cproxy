@@ -1,15 +1,14 @@
 #include "memutil.h"
 #include <stdio.h>
 
-void* checkedCalloc(
-  const size_t nmemb,
+void* checkedCallocOne(
   const size_t size)
 {
-  void* retVal = calloc(nmemb, size);
+  void* retVal = calloc(1, size);
   if (retVal == NULL)
   {
-    printf("calloc failed nmemb %lld size %lld\n",
-           (long long)nmemb, (long long)size);
+    printf("calloc failed nmemb %d size %lld\n",
+           1, (long long)size);
     abort();
   }
   return retVal;

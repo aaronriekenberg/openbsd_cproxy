@@ -22,7 +22,7 @@ struct PollState
 
 struct PollState* newPollState()
 {
-  struct PollState* pollState = checkedCalloc(1, sizeof(struct PollState));
+  struct PollState* pollState = checkedCallocOne(sizeof(struct PollState));
   pollState->kqueueFD = kqueue();
   if (pollState->kqueueFD < 0)
   {

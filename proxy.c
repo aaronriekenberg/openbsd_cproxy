@@ -85,7 +85,7 @@ static void setupServerSockets(
     const struct addrinfo* listenAddrInfo = pServerAddrInfo->addrinfo;
     struct AddrPortStrings serverAddrPortStrings;
     struct ServerSocketInfo* serverSocketInfo =
-      checkedCalloc(1, sizeof(struct ServerSocketInfo));
+      checkedCallocOne(sizeof(struct ServerSocketInfo));
     serverSocketInfo->handleConnectionReadyFunction = handleServerSocketReady;
 
     if (!addrInfoToNameAndPort(listenAddrInfo,
@@ -328,7 +328,7 @@ static void handleNewClientSocket(
   struct ConnectionSocketInfo* connInfo1 = NULL;
   struct ConnectionSocketInfo* connInfo2 = NULL;
 
-  connInfo1 = checkedCalloc(1, sizeof(struct ConnectionSocketInfo));
+  connInfo1 = checkedCallocOne(sizeof(struct ConnectionSocketInfo));
   connInfo1->handleConnectionReadyFunction = handleConnectionSocketReady;
   connInfo1->type = CLIENT_TO_PROXY;
   connInfo1->socket = clientSocket;
@@ -342,7 +342,7 @@ static void handleNewClientSocket(
     goto fail;
   }
 
-  connInfo2 = checkedCalloc(1, sizeof(struct ConnectionSocketInfo));
+  connInfo2 = checkedCallocOne(sizeof(struct ConnectionSocketInfo));
   connInfo2->handleConnectionReadyFunction = handleConnectionSocketReady;
   connInfo2->type = PROXY_TO_REMOTE;
 
