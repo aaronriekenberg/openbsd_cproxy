@@ -149,7 +149,7 @@ enum AcceptSocketResult acceptSocket(
 {
   enum AcceptSocketResult acceptSocketResult;
   bool interrupted;
-  int retVal;
+  int acceptRetVal;
 
   assert(acceptFD != NULL);
 
@@ -163,13 +163,13 @@ enum AcceptSocketResult acceptSocket(
       addr = &(sockAddrInfo->sa);
       addrlen = &(sockAddrInfo->saSize);
     }
-    retVal = accept(socketFD, addr, addrlen);
+    acceptRetVal = accept(socketFD, addr, addrlen);
     interrupted =
-      ((retVal == -1) &&
+      ((acceptRetVal == -1) &&
        (errno == EINTR));
   } while (interrupted);
 
-  if (retVal == -1)
+  if (acceptRetVal == -1)
   {
     if (errno == EWOULDBLOCK)
     {
@@ -182,7 +182,7 @@ enum AcceptSocketResult acceptSocket(
   }
   else
   {
-    *acceptFD = retVal;
+    *acceptFD = acceptRetVal;
     acceptSocketResult = ACCEPT_SOCKET_RESULT_SUCCESS;
   }
 
