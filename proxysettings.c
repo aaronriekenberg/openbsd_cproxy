@@ -164,7 +164,7 @@ const struct ProxySettings* processArgs(
   while (retVal != -1);
 
   if (SIMPLEQ_EMPTY(&(proxySettings->serverAddrInfoList)) ||
-      (!(proxySettings->remoteAddrInfo)))
+      (proxySettings->remoteAddrInfo == NULL))
   {
     goto fail;
   }
