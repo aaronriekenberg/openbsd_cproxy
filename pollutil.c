@@ -24,7 +24,7 @@ struct PollState* newPollState()
 {
   struct PollState* pollState = checkedCallocOne(sizeof(struct PollState));
   pollState->kqueueFD = kqueue();
-  if (pollState->kqueueFD < 0)
+  if (pollState->kqueueFD == -1)
   {
     proxyLog("kqueue error errno %d: %s",
              errno,
@@ -49,7 +49,7 @@ static int signalSafeKevent(
       kq, changelist, nchanges,
       eventlist, nevents,
       timeout);
-    interrupted = ((retVal < 0) &&
+    interrupted = ((retVal == -1) &&
                    (errno == EINTR));
   } while (interrupted);
   return retVal;
@@ -95,7 +95,7 @@ void addPollFDForRead(
   EV_SET(&event, fd, EVFILT_READ, EV_ADD, 0, 0, data);
 
   retVal = signalSafeKevent(pollState->kqueueFD, &event, 1, NULL, 0, NULL);
-  if (retVal < 0)
+  if (retVal == -1)
   {
     proxyLog("kevent add read event error fd %d errno %d: %s",
              fd,
@@ -122,7 +122,7 @@ void removePollFDForRead(
   EV_SET(&event, fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
 
   retVal = signalSafeKevent(pollState->kqueueFD, &event, 1, NULL, 0, NULL);
-  if (retVal < 0)
+  if (retVal == -1)
   {
     proxyLog("kevent remove read event error fd %d errno %d: %s",
              fd,
@@ -151,7 +151,7 @@ void addPollFDForWriteAndTimeout(
   EV_SET(&(events[1]), fd, EVFILT_TIMER, EV_ADD, 0, timeoutMillseconds, data);
 
   retVal = signalSafeKevent(pollState->kqueueFD, events, 2, NULL, 0, NULL);
-  if (retVal < 0)
+  if (retVal == -1)
   {
     proxyLog("kevent add write and timeout events error fd %d errno %d: %s",
              fd,
@@ -179,7 +179,7 @@ void removePollFDForWriteAndTimeout(
   EV_SET(&(events[1]), fd, EVFILT_TIMER, EV_DELETE, 0, 0, NULL);
 
   retVal = signalSafeKevent(pollState->kqueueFD, events, 2, NULL, 0, NULL);
-  if (retVal < 0)
+  if (retVal == -1)
   {
     proxyLog("kevent remove write and timeout events error fd %d errno %d: %s",
              fd,
@@ -214,7 +214,7 @@ const struct PollResult* blockingPoll(
     pollState->keventArray, pollState->keventArrayCapacity,
     NULL);
 
-  if (retVal < 0)
+  if (retVal == -1)
   {
     proxyLog("kevent wait error errno %d: %s",
              errno,
