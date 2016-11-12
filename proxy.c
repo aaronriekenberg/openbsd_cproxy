@@ -229,6 +229,23 @@ fail:
   return false;
 }
 
+static const struct RemoteAddrInfo* chooseRemoteAddrInfo(
+  const struct ProxySettings* proxySettings)
+{
+  const size_t remoteAddrInfoIndex =
+    arc4random_uniform(
+      proxySettings->remoteAddrInfoArrayLength);
+  const struct RemoteAddrInfo* remoteAddrInfo =
+    &(proxySettings->remoteAddrInfoArray[remoteAddrInfoIndex]);
+
+  proxyLog("remote address %s:%s (index=%ld)",
+           remoteAddrInfo->addrPortStrings.addrString,
+           remoteAddrInfo->addrPortStrings.portString,
+           remoteAddrInfoIndex);
+
+  return remoteAddrInfo;
+}
+
 enum RemoteSocketStatus
 {
   REMOTE_SOCKET_ERROR,
@@ -328,8 +345,7 @@ static void handleNewClientSocket(
   struct ConnectionSocketInfo* connInfo1 =
     checkedCallocOne(sizeof(struct ConnectionSocketInfo));
   struct ConnectionSocketInfo* connInfo2 = NULL;
-  size_t remoteAddrInfoIndex;
-  struct RemoteAddrInfo* remoteAddrInfo;
+  const struct RemoteAddrInfo* remoteAddrInfo;
 
   connInfo1->handleConnectionReadyFunction = handleConnectionSocketReady;
   connInfo1->type = CLIENT_TO_PROXY;
@@ -348,14 +364,7 @@ static void handleNewClientSocket(
   connInfo2->handleConnectionReadyFunction = handleConnectionSocketReady;
   connInfo2->type = PROXY_TO_REMOTE;
 
-  remoteAddrInfoIndex =
-    arc4random_uniform(
-      proxySettings->remoteAddrInfoArrayLength);
-  remoteAddrInfo = &(proxySettings->remoteAddrInfoArray[remoteAddrInfoIndex]);
-  proxyLog("remote address %s:%s (index=%ld)",
-           remoteAddrInfo->addrPortStrings.addrString,
-           remoteAddrInfo->addrPortStrings.portString,
-           remoteAddrInfoIndex);
+  remoteAddrInfo = chooseRemoteAddrInfo(proxySettings);
 
   remoteSocketResult =
     createRemoteSocket(clientSocket,
