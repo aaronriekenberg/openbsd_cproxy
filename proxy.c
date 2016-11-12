@@ -634,10 +634,10 @@ static void runProxy(
   struct PollState* pollState;
   size_t i;
 
+  proxyLog("num remote addresses = %ld", proxySettings->remoteAddrInfoArrayLength);
   for (i = 0; i < proxySettings->remoteAddrInfoArrayLength; ++i)
   {
-    proxyLog("remote address %ld = %s:%s",
-             i,
+    proxyLog("remote address %ld = %s:%s", i,
              proxySettings->remoteAddrInfoArray[i].addrPortStrings.addrString,
              proxySettings->remoteAddrInfoArray[i].addrPortStrings.portString);
   }
