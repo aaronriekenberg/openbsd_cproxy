@@ -347,7 +347,9 @@ static void handleNewClientSocket(
   connInfo2->handleConnectionReadyFunction = handleConnectionSocketReady;
   connInfo2->type = PROXY_TO_REMOTE;
 
-  remoteAddrInfoIndex = arc4random_uniform(proxySettings->remoteAddrInfoArrayLength);
+  remoteAddrInfoIndex =
+    arc4random_uniform(
+      proxySettings->remoteAddrInfoArrayLength);
   proxyLog("remote address index = %ld", remoteAddrInfoIndex);
 
   remoteAddrInfo = &(proxySettings->remoteAddrInfoArray[remoteAddrInfoIndex]);
