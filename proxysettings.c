@@ -125,6 +125,7 @@ const struct ProxySettings* processArgs(
   int retVal;
   struct ServerAddrInfo* pServerAddrInfo;
   struct RemoteAddrInfo* pRemoteAddrInfo;
+  size_t remoteAddrInfoArrayCapacity = 0;
   struct ProxySettings* proxySettings =
     checkedCallocOne(sizeof(struct ProxySettings));
 
@@ -149,10 +150,23 @@ const struct ProxySettings* processArgs(
 
     case 'r':
       ++(proxySettings->remoteAddrInfoArrayLength);
-      proxySettings->remoteAddrInfoArray = checkedReallocarray(
-        proxySettings->remoteAddrInfoArray,
-        proxySettings->remoteAddrInfoArrayLength,
-        sizeof(struct RemoteAddrInfo));
+
+      if (proxySettings->remoteAddrInfoArrayLength > remoteAddrInfoArrayCapacity)
+      {
+        if (remoteAddrInfoArrayCapacity == 0)
+        {
+          remoteAddrInfoArrayCapacity = 16;
+        }
+        else
+        {
+          remoteAddrInfoArrayCapacity *= 2;
+        }
+        proxySettings->remoteAddrInfoArray = checkedReallocarray(
+          proxySettings->remoteAddrInfoArray,
+          remoteAddrInfoArrayCapacity,
+          sizeof(struct RemoteAddrInfo));
+      }
+
       pRemoteAddrInfo =
         &(proxySettings->remoteAddrInfoArray[
             proxySettings->remoteAddrInfoArrayLength - 1]);
