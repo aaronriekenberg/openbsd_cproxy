@@ -351,9 +351,11 @@ static void handleNewClientSocket(
   remoteAddrInfoIndex =
     arc4random_uniform(
       proxySettings->remoteAddrInfoArrayLength);
-  proxyLog("remote address index = %ld", remoteAddrInfoIndex);
-
   remoteAddrInfo = &(proxySettings->remoteAddrInfoArray[remoteAddrInfoIndex]);
+  proxyLog("remote address %s:%s (index=%ld)",
+           remoteAddrInfo->addrPortStrings.addrString,
+           remoteAddrInfo->addrPortStrings.portString,
+           remoteAddrInfoIndex);
 
   remoteSocketResult =
     createRemoteSocket(clientSocket,
