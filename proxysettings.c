@@ -14,6 +14,7 @@ static void printUsageAndExit()
          "  cproxy -l <local addr>:<local port>\n"
          "         [-l <local addr>:<local port>...]\n"
          "         -r <remote addr>:<remote port>\n"
+         "         [-r <remote addr>:<remote port>...]\n"
          "         [-c <connect timeout milliseconds>]\n"
          "Arguments:\n"
          "  -c <connect timeout milliseconds>: specify connection timeout\n"
@@ -123,6 +124,7 @@ const struct ProxySettings* processArgs(
 {
   int retVal;
   struct ServerAddrInfo* pServerAddrInfo;
+  struct RemoteAddrInfo* pRemoteAddrInfo;
   struct ProxySettings* proxySettings =
     checkedCallocOne(sizeof(struct ProxySettings));
 
@@ -146,14 +148,17 @@ const struct ProxySettings* processArgs(
       break;
 
     case 'r':
-      if (proxySettings->remoteAddrInfo)
-      {
-        goto fail;
-      }
-      proxySettings->remoteAddrInfo =
+      ++(proxySettings->remoteAddrInfoArrayLength);
+      proxySettings->remoteAddrInfoArray = checkedReallocarray(
+        proxySettings->remoteAddrInfoArray,
+        proxySettings->remoteAddrInfoArrayLength,
+        sizeof(struct RemoteAddrInfo));
+      pRemoteAddrInfo = 
+        &(proxySettings->remoteAddrInfoArray[proxySettings->remoteAddrInfoArrayLength - 1]);
+      pRemoteAddrInfo->addrinfo =
         parseRemoteAddrPort(
           optarg,
-          &(proxySettings->remoteAddrPortStrings));
+          &(pRemoteAddrInfo->addrPortStrings));
       break;
 
     case '?':
@@ -164,7 +169,7 @@ const struct ProxySettings* processArgs(
   while (retVal != -1);
 
   if (SIMPLEQ_EMPTY(&(proxySettings->serverAddrInfoList)) ||
-      (proxySettings->remoteAddrInfo == NULL))
+      (proxySettings->remoteAddrInfoArrayLength == 0))
   {
     goto fail;
   }

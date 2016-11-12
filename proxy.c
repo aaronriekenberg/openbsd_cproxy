@@ -244,7 +244,7 @@ struct RemoteSocketResult
 
 static struct RemoteSocketResult createRemoteSocket(
   const int clientSocket,
-  const struct ProxySettings* proxySettings,
+  const struct RemoteAddrInfo* remoteAddrInfo,
   struct AddrPortStrings* proxyClientAddrPortStrings)
 {
   enum ConnectSocketResult connectSocketResult;
@@ -253,7 +253,7 @@ static struct RemoteSocketResult createRemoteSocket(
   result.status = REMOTE_SOCKET_ERROR;
 
   if (!createNonBlockingSocket(
-         proxySettings->remoteAddrInfo,
+         remoteAddrInfo->addrinfo,
          &(result.remoteSocket)))
   {
     proxyLog("error creating remote socket errno = %d", errno);
@@ -261,7 +261,7 @@ static struct RemoteSocketResult createRemoteSocket(
   }
 
   connectSocketResult = connectSocket(result.remoteSocket,
-                                      proxySettings->remoteAddrInfo);
+                                      remoteAddrInfo->addrinfo);
   if (connectSocketResult == CONNECT_SOCKET_RESULT_IN_PROGRESS)
   {
     result.status = REMOTE_SOCKET_IN_PROGRESS;
@@ -303,8 +303,8 @@ static struct RemoteSocketResult createRemoteSocket(
             "starting"),
            proxyClientAddrPortStrings->addrString,
            proxyClientAddrPortStrings->portString,
-           proxySettings->remoteAddrPortStrings.addrString,
-           proxySettings->remoteAddrPortStrings.portString,
+           remoteAddrInfo->addrPortStrings.addrString,
+           remoteAddrInfo->addrPortStrings.portString,
            result.remoteSocket);
 
   return result;
@@ -327,6 +327,8 @@ static void handleNewClientSocket(
   struct RemoteSocketResult remoteSocketResult;
   struct ConnectionSocketInfo* connInfo1 = checkedCallocOne(sizeof(struct ConnectionSocketInfo));
   struct ConnectionSocketInfo* connInfo2 = NULL;
+  size_t remoteAddrInfoIndex = 0;
+  struct RemoteAddrInfo* remoteAddrInfo = NULL;
 
   connInfo1->handleConnectionReadyFunction = handleConnectionSocketReady;
   connInfo1->type = CLIENT_TO_PROXY;
@@ -345,9 +347,14 @@ static void handleNewClientSocket(
   connInfo2->handleConnectionReadyFunction = handleConnectionSocketReady;
   connInfo2->type = PROXY_TO_REMOTE;
 
+  remoteAddrInfoIndex = arc4random_uniform(proxySettings->remoteAddrInfoArrayLength);
+  proxyLog("remote address index = %ld", remoteAddrInfoIndex);
+
+  remoteAddrInfo = &(proxySettings->remoteAddrInfoArray[remoteAddrInfoIndex]);
+
   remoteSocketResult =
     createRemoteSocket(clientSocket,
-                       proxySettings,
+                       remoteAddrInfo,
                        &(connInfo2->clientAddrPortStrings));
   if (remoteSocketResult.status == REMOTE_SOCKET_ERROR)
   {
@@ -356,7 +363,7 @@ static void handleNewClientSocket(
   connInfo2->socket = remoteSocketResult.remoteSocket;
 
   memcpy(&(connInfo2->serverAddrPortStrings),
-         &(proxySettings->remoteAddrPortStrings),
+         &(remoteAddrInfo->addrPortStrings),
          sizeof(struct AddrPortStrings));
 
   if (remoteSocketResult.status == REMOTE_SOCKET_CONNECTED)
@@ -622,10 +629,15 @@ static void runProxy(
   const struct ProxySettings* proxySettings)
 {
   struct PollState* pollState;
+  size_t i;
 
-  proxyLog("remote address = %s:%s",
-           proxySettings->remoteAddrPortStrings.addrString,
-           proxySettings->remoteAddrPortStrings.portString);
+  for (i = 0; i < proxySettings->remoteAddrInfoArrayLength; ++i)
+  {
+    proxyLog("remote address %ld = %s:%s",
+             i,
+             proxySettings->remoteAddrInfoArray[i].addrPortStrings.addrString,
+             proxySettings->remoteAddrInfoArray[i].addrPortStrings.portString);
+  }
   proxyLog("connect timeout milliseconds = %d",
            proxySettings->connectTimeoutMS);
 
@@ -637,7 +649,6 @@ static void runProxy(
 
   while (true)
   {
-    size_t i;
     bool pollStateInvalidated = false;
     const struct PollResult* pollResult = blockingPoll(pollState);
 

@@ -10,11 +10,17 @@ struct ServerAddrInfo
   SIMPLEQ_ENTRY(ServerAddrInfo) entry;
 };
 
+struct RemoteAddrInfo
+{
+  struct addrinfo* addrinfo;
+  struct AddrPortStrings addrPortStrings;
+};
+
 struct ProxySettings
 {
   SIMPLEQ_HEAD(,ServerAddrInfo) serverAddrInfoList;
-  struct addrinfo* remoteAddrInfo;
-  struct AddrPortStrings remoteAddrPortStrings;
+  struct RemoteAddrInfo* remoteAddrInfoArray;
+  size_t remoteAddrInfoArrayLength;
   uint32_t connectTimeoutMS;
 };
 
