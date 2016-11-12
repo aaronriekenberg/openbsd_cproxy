@@ -153,8 +153,9 @@ const struct ProxySettings* processArgs(
         proxySettings->remoteAddrInfoArray,
         proxySettings->remoteAddrInfoArrayLength,
         sizeof(struct RemoteAddrInfo));
-      pRemoteAddrInfo = 
-        &(proxySettings->remoteAddrInfoArray[proxySettings->remoteAddrInfoArrayLength - 1]);
+      pRemoteAddrInfo =
+        &(proxySettings->remoteAddrInfoArray[
+            proxySettings->remoteAddrInfoArrayLength - 1]);
       pRemoteAddrInfo->addrinfo =
         parseRemoteAddrPort(
           optarg,
