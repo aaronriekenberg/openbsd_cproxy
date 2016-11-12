@@ -325,10 +325,11 @@ static void handleNewClientSocket(
   struct PollState* pollState)
 {
   struct RemoteSocketResult remoteSocketResult;
-  struct ConnectionSocketInfo* connInfo1 = checkedCallocOne(sizeof(struct ConnectionSocketInfo));
+  struct ConnectionSocketInfo* connInfo1 =
+    checkedCallocOne(sizeof(struct ConnectionSocketInfo));
   struct ConnectionSocketInfo* connInfo2 = NULL;
-  size_t remoteAddrInfoIndex = 0;
-  struct RemoteAddrInfo* remoteAddrInfo = NULL;
+  size_t remoteAddrInfoIndex;
+  struct RemoteAddrInfo* remoteAddrInfo;
 
   connInfo1->handleConnectionReadyFunction = handleConnectionSocketReady;
   connInfo1->type = CLIENT_TO_PROXY;
