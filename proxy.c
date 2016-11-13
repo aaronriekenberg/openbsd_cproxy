@@ -236,7 +236,7 @@ static const struct RemoteAddrInfo* chooseRemoteAddrInfo(
     arc4random_uniform(
       proxySettings->remoteAddrInfoArrayLength);
   const struct RemoteAddrInfo* remoteAddrInfo =
-    &(proxySettings->remoteAddrInfoArray[remoteAddrInfoIndex]);
+    proxySettings->remoteAddrInfoArray + remoteAddrInfoIndex;
 
   proxyLog("remote address %s:%s (index=%lu)",
            remoteAddrInfo->addrPortStrings.addrString,
