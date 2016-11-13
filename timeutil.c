@@ -35,6 +35,6 @@ void printTimeString()
     abort();
   }
 
-  snprintf(&buffer[charsWritten], 8, ".%06ld", (long)tv.tv_usec);
+  snprintf(&buffer[charsWritten], 8, ".%06ld", tv.tv_usec);
   printf("%s", buffer);
 }

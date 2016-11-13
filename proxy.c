@@ -238,7 +238,7 @@ static const struct RemoteAddrInfo* chooseRemoteAddrInfo(
   const struct RemoteAddrInfo* remoteAddrInfo =
     &(proxySettings->remoteAddrInfoArray[remoteAddrInfoIndex]);
 
-  proxyLog("remote address %s:%s (index=%ld)",
+  proxyLog("remote address %s:%s (index=%lu)",
            remoteAddrInfo->addrPortStrings.addrString,
            remoteAddrInfo->addrPortStrings.portString,
            remoteAddrInfoIndex);
@@ -411,7 +411,7 @@ static void printDisconnectMessage(
     ((connectionSocketInfo->type == CLIENT_TO_PROXY) ?
      "client to proxy" :
      "proxy to remote");
-  proxyLog("disconnect %s %s:%s -> %s:%s (fd=%d,bytes=%ld)",
+  proxyLog("disconnect %s %s:%s -> %s:%s (fd=%d,bytes=%lu)",
            typeString,
            connectionSocketInfo->clientAddrPortStrings.addrString,
            connectionSocketInfo->clientAddrPortStrings.portString,
@@ -647,7 +647,7 @@ static void runProxy(
 
   for (i = 0; i < proxySettings->remoteAddrInfoArrayLength; ++i)
   {
-    proxyLog("remote address [%ld] = %s:%s", i,
+    proxyLog("remote address [%lu] = %s:%s", i,
              proxySettings->remoteAddrInfoArray[i].addrPortStrings.addrString,
              proxySettings->remoteAddrInfoArray[i].addrPortStrings.portString);
   }
