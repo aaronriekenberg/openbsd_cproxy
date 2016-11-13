@@ -155,7 +155,7 @@ const struct ProxySettings* processArgs(
       {
         if (remoteAddrInfoArrayCapacity == 0)
         {
-          remoteAddrInfoArrayCapacity = 2;
+          remoteAddrInfoArrayCapacity = 16;
         }
         else
         {

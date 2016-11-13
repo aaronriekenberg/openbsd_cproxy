@@ -66,7 +66,7 @@ static void resizeKeventArray(
     changedCapacity = true;
     if (pollState->keventArrayCapacity == 0)
     {
-      pollState->keventArrayCapacity = 2;
+      pollState->keventArrayCapacity = 16;
     }
     else
     {

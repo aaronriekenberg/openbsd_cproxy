@@ -16,7 +16,7 @@ void setPollResultNumReadyFDs(
     changedCapacity = true;
     if (pollResult->arrayCapacity == 0)
     {
-      pollResult->arrayCapacity = 2;
+      pollResult->arrayCapacity = 16;
     }
     else
     {
