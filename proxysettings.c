@@ -189,6 +189,12 @@ const struct ProxySettings* processArgs(
     goto fail;
   }
 
+  // trim to remoteAddrInfoArrayLength
+  proxySettings->remoteAddrInfoArray = checkedReallocarray(
+    proxySettings->remoteAddrInfoArray,
+    proxySettings->remoteAddrInfoArrayLength,
+    sizeof(struct RemoteAddrInfo));
+
   return proxySettings;
 
 fail:
