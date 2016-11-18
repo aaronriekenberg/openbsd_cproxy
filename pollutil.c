@@ -229,9 +229,9 @@ const struct PollResult* blockingPoll(
   for (i = 0; i < retVal; ++i)
   {
     struct ReadyFDInfo* readyFDInfo =
-      &(pollState->pollResult.readyFDInfoArray[i]);
+      pollState->pollResult.readyFDInfoArray + i;
     const struct kevent* readyKEvent =
-      &(pollState->keventArray[i]);
+      pollState->keventArray + i;
     readyFDInfo->data = readyKEvent->udata;
     readyFDInfo->readyForRead = (readyKEvent->filter == EVFILT_READ);
     readyFDInfo->readyForWrite = (readyKEvent->filter == EVFILT_WRITE);
