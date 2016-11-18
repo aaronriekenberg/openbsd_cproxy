@@ -673,8 +673,7 @@ static void runProxy(
          (i < pollResult->numReadyFDs);
          ++i)
     {
-      const struct ReadyFDInfo* readyFDInfo =
-        &(pollResult->readyFDInfoArray[i]);
+      const struct ReadyFDInfo* readyFDInfo = pollResult->readyFDInfoArray + i;
       struct AbstractSocketInfo* pAbstractSocketInfo = readyFDInfo->data;
       const enum HandleConnectionReadyResult handleConnectionReadyResult =
         (*(pAbstractSocketInfo->handleConnectionReadyFunction))(
