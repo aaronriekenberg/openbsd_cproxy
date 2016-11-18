@@ -6,6 +6,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+static bool flushAfterLog = false;
+
+void proxyLogSetFlush(bool enabled)
+{
+  flushAfterLog = enabled;
+}
+
 void proxyLog(const char* format, ...)
 {
   va_list args;
@@ -16,7 +23,11 @@ void proxyLog(const char* format, ...)
   printf(" ");
   vprintf(format, args);
   printf("\n");
-  fflush(stdout);
+
+  if (flushAfterLog)
+  {
+    fflush(stdout);
+  }
 
   va_end(args);
 }

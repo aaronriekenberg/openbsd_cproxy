@@ -16,10 +16,12 @@ static void printUsageAndExit()
          "         -r <remote addr>:<remote port>\n"
          "         [-r <remote addr>:<remote port>...]\n"
          "         [-c <connect timeout milliseconds>]\n"
+         "         [-f]\n"
          "Arguments:\n"
-         "  -c <connect timeout milliseconds>: specify connection timeout\n"
          "  -l <local addr>:<local port>: specify listen address and port\n"
-         "  -r <remote addr>:<remote port>: specify remote address and port\n");
+         "  -r <remote addr>:<remote port>: specify remote address and port\n"
+         "  -c <connect timeout milliseconds>: specify connection timeout\n"
+         "  -f: flush stdout on each log\n");
   exit(1);
 }
 
@@ -133,11 +135,15 @@ const struct ProxySettings* processArgs(
   SIMPLEQ_INIT(&(proxySettings->serverAddrInfoList));
   do
   {
-    retVal = getopt(argc, argv, "c:l:r:");
+    retVal = getopt(argc, argv, "c:fl:r:");
     switch (retVal)
     {
     case 'c':
       proxySettings->connectTimeoutMS = parseConnectTimeoutMS(optarg);
+      break;
+
+    case 'f':
+      proxySettings->flushAfterLog = true;
       break;
 
     case 'l':

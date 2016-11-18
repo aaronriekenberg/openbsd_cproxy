@@ -645,6 +645,9 @@ static void runProxy(
   struct PollState* pollState;
   size_t i;
 
+  proxyLogSetFlush(proxySettings->flushAfterLog);
+  proxyLog("flush stdout after log = %d", proxySettings->flushAfterLog);
+
   for (i = 0; i < proxySettings->remoteAddrInfoArrayLength; ++i)
   {
     proxyLog("remote address [%lu] = %s:%s", i,
