@@ -96,11 +96,12 @@ static void parseRemoteAddrPort(
   struct ProxySettings* proxySettings,
   size_t* remoteAddrInfoArrayCapacity)
 {
-  struct RemoteAddrInfo* pRemoteAddrInfo;
   struct addrinfo* addressInfo = parseAddrPort(optarg);
 
   while (addressInfo != NULL)
   {
+    struct RemoteAddrInfo* remoteAddrInfo;
+
     ++(proxySettings->remoteAddrInfoArrayLength);
 
     if (proxySettings->remoteAddrInfoArrayLength >
@@ -120,15 +121,15 @@ static void parseRemoteAddrPort(
         sizeof(struct RemoteAddrInfo));
     }
 
-    pRemoteAddrInfo =
+    remoteAddrInfo =
       proxySettings->remoteAddrInfoArray +
       proxySettings->remoteAddrInfoArrayLength - 1;
 
-    pRemoteAddrInfo->addrinfo = addressInfo;
+    remoteAddrInfo->addrinfo = addressInfo;
 
     if (!addrInfoToNameAndPort(
           addressInfo,
-          &(pRemoteAddrInfo->addrPortStrings)))
+          &(remoteAddrInfo->addrPortStrings)))
     {
       goto fail;
     }
