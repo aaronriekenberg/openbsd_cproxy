@@ -104,7 +104,8 @@ static void parseRemoteAddrPort(
   {
     ++(proxySettings->remoteAddrInfoArrayLength);
 
-    if (proxySettings->remoteAddrInfoArrayLength > (*remoteAddrInfoArrayCapacity))
+    if (proxySettings->remoteAddrInfoArrayLength >
+        (*remoteAddrInfoArrayCapacity))
     {
       if ((*remoteAddrInfoArrayCapacity) == 0)
       {
