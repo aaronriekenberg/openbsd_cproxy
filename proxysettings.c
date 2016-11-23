@@ -91,6 +91,20 @@ fail:
   exit(1);
 }
 
+static void parseServerAddrPort(
+  const char* optarg,
+  struct ProxySettings* proxySettings)
+{
+  struct ServerAddrInfo* serverAddrInfo =
+    checkedCallocOne(sizeof(struct ServerAddrInfo));
+
+  serverAddrInfo->addrinfo = parseAddrPort(optarg);
+
+  SIMPLEQ_INSERT_TAIL(
+    &(proxySettings->serverAddrInfoList),
+    serverAddrInfo, entry);
+}
+
 static void parseRemoteAddrPort(
   const char* optarg,
   struct ProxySettings* proxySettings,
@@ -160,7 +174,6 @@ const struct ProxySettings* processArgs(
   char** argv)
 {
   int retVal;
-  struct ServerAddrInfo* pServerAddrInfo;
   size_t remoteAddrInfoArrayCapacity = 0;
   struct ProxySettings* proxySettings =
     checkedCallocOne(sizeof(struct ProxySettings));
@@ -181,11 +194,7 @@ const struct ProxySettings* processArgs(
       break;
 
     case 'l':
-      pServerAddrInfo = checkedCallocOne(sizeof(struct ServerAddrInfo));
-      pServerAddrInfo->addrinfo = parseAddrPort(optarg);
-      SIMPLEQ_INSERT_TAIL(
-        &(proxySettings->serverAddrInfoList),
-        pServerAddrInfo, entry);
+      parseServerAddrPort(optarg, proxySettings);
       break;
 
     case 'r':
