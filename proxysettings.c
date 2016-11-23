@@ -65,10 +65,10 @@ static struct addrinfo* parseAddrPort(
     goto fail;
   }
 
-  strncpy(addressString, optarg, hostLength);
+  memcpy(addressString, optarg, hostLength);
   addressString[hostLength] = 0;
 
-  strncpy(portString, &(optarg[colonIndex + 1]), portLength);
+  memcpy(portString, optarg + colonIndex + 1, portLength);
   portString[portLength] = 0;
 
   memset(&hints, 0, sizeof(hints));
@@ -77,9 +77,8 @@ static struct addrinfo* parseAddrPort(
   hints.ai_protocol = IPPROTO_TCP;
   hints.ai_flags = AI_ADDRCONFIG;
 
-  if (((retVal = getaddrinfo(addressString, portString,
-                             &hints, &addressInfo)) != 0) ||
-      (addressInfo == NULL))
+  if ((retVal = getaddrinfo(addressString, portString,
+                            &hints, &addressInfo)) != 0)
   {
     proxyLog("error resolving address %s %s",
              optarg, gai_strerror(retVal));
