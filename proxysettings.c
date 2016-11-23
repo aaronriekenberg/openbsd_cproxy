@@ -92,20 +92,54 @@ fail:
   exit(1);
 }
 
-static struct addrinfo* parseRemoteAddrPort(
+static void parseRemoteAddrPort(
   const char* optarg,
-  struct AddrPortStrings* addrPortStrings)
+  struct ProxySettings* proxySettings,
+  size_t* remoteAddrInfoArrayCapacity)
 {
+  struct RemoteAddrInfo* pRemoteAddrInfo;
   struct addrinfo* addressInfo = parseAddrPort(optarg);
 
-  if (!addrInfoToNameAndPort(
-        addressInfo,
-        addrPortStrings))
+  while (addressInfo != NULL)
   {
-    exit(1);
+    ++(proxySettings->remoteAddrInfoArrayLength);
+
+    if (proxySettings->remoteAddrInfoArrayLength > (*remoteAddrInfoArrayCapacity))
+    {
+      if ((*remoteAddrInfoArrayCapacity) == 0)
+      {
+        (*remoteAddrInfoArrayCapacity) = 16;
+      }
+      else
+      {
+        (*remoteAddrInfoArrayCapacity) *= 2;
+      }
+      proxySettings->remoteAddrInfoArray = checkedReallocarray(
+        proxySettings->remoteAddrInfoArray,
+        (*remoteAddrInfoArrayCapacity),
+        sizeof(struct RemoteAddrInfo));
+    }
+
+    pRemoteAddrInfo =
+      proxySettings->remoteAddrInfoArray +
+      proxySettings->remoteAddrInfoArrayLength - 1;
+
+    pRemoteAddrInfo->addrinfo = addressInfo;
+
+    if (!addrInfoToNameAndPort(
+          addressInfo,
+          &(pRemoteAddrInfo->addrPortStrings)))
+    {
+      goto fail;
+    }
+
+    addressInfo = addressInfo->ai_next;
   }
 
-  return addressInfo;
+  return;
+
+fail:
+  exit(1);
 }
 
 static uint32_t parseConnectTimeoutMS(char* optarg)
@@ -126,7 +160,6 @@ const struct ProxySettings* processArgs(
 {
   int retVal;
   struct ServerAddrInfo* pServerAddrInfo;
-  struct RemoteAddrInfo* pRemoteAddrInfo;
   size_t remoteAddrInfoArrayCapacity = 0;
   struct ProxySettings* proxySettings =
     checkedCallocOne(sizeof(struct ProxySettings));
@@ -155,31 +188,7 @@ const struct ProxySettings* processArgs(
       break;
 
     case 'r':
-      ++(proxySettings->remoteAddrInfoArrayLength);
-
-      if (proxySettings->remoteAddrInfoArrayLength > remoteAddrInfoArrayCapacity)
-      {
-        if (remoteAddrInfoArrayCapacity == 0)
-        {
-          remoteAddrInfoArrayCapacity = 16;
-        }
-        else
-        {
-          remoteAddrInfoArrayCapacity *= 2;
-        }
-        proxySettings->remoteAddrInfoArray = checkedReallocarray(
-          proxySettings->remoteAddrInfoArray,
-          remoteAddrInfoArrayCapacity,
-          sizeof(struct RemoteAddrInfo));
-      }
-
-      pRemoteAddrInfo =
-        proxySettings->remoteAddrInfoArray +
-        proxySettings->remoteAddrInfoArrayLength - 1;
-      pRemoteAddrInfo->addrinfo =
-        parseRemoteAddrPort(
-          optarg,
-          &(pRemoteAddrInfo->addrPortStrings));
+      parseRemoteAddrPort(optarg, proxySettings, &remoteAddrInfoArrayCapacity);
       break;
 
     case '?':
