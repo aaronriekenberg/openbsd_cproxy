@@ -179,9 +179,9 @@ const struct ProxySettings* processArgs(
 
   proxySettings->connectTimeoutMS = DEFAULT_CONNECT_TIMEOUT_MS;
   SIMPLEQ_INIT(&(proxySettings->serverAddrInfoList));
-  do
+
+  while ((retVal = getopt(argc, argv, "c:fl:r:")) != -1)
   {
-    retVal = getopt(argc, argv, "c:fl:r:");
     switch (retVal)
     {
     case 'c':
@@ -205,7 +205,6 @@ const struct ProxySettings* processArgs(
       break;
     }
   }
-  while (retVal != -1);
 
   if (SIMPLEQ_EMPTY(&(proxySettings->serverAddrInfoList)) ||
       (proxySettings->remoteAddrInfoArrayLength == 0))
