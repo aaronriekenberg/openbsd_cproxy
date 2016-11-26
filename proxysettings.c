@@ -200,7 +200,7 @@ const struct ProxySettings* processArgs(
       parseRemoteAddrPort(optarg, proxySettings, &remoteAddrInfoArrayCapacity);
       break;
 
-    case '?':
+    default:
       goto fail;
       break;
     }
