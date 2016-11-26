@@ -78,11 +78,11 @@ static void setupServerSockets(
   const struct ProxySettings* proxySettings,
   struct PollState* pollState)
 {
-  const struct ServerAddrInfo* pServerAddrInfo;
+  const struct ServerAddrInfo* serverAddrInfo;
 
-  SIMPLEQ_FOREACH(pServerAddrInfo, &(proxySettings->serverAddrInfoList), entry)
+  SIMPLEQ_FOREACH(serverAddrInfo, &(proxySettings->serverAddrInfoList), entry)
   {
-    const struct addrinfo* listenAddrInfo = pServerAddrInfo->addrinfo;
+    const struct addrinfo* listenAddrInfo = serverAddrInfo->addrinfo;
     struct AddrPortStrings serverAddrPortStrings;
     struct ServerSocketInfo* serverSocketInfo =
       checkedCallocOne(sizeof(struct ServerSocketInfo));
