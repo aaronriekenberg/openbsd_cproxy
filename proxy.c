@@ -447,15 +447,15 @@ static struct ConnectionSocketInfo* handleConnectionReadyForRead(
   struct ConnectionSocketInfo* connectionSocketInfo,
   struct PollState* pollState)
 {
-  struct ConnectionSocketInfo* pDisconnectSocketInfo = NULL;
+  struct ConnectionSocketInfo* disconnectSocketInfo = NULL;
 
   if (connectionSocketInfo->waitingForRead)
   {
     proxyLog("splice read error fd %d", connectionSocketInfo->socket);
-    pDisconnectSocketInfo = connectionSocketInfo;
+    disconnectSocketInfo = connectionSocketInfo;
   }
 
-  return pDisconnectSocketInfo;
+  return disconnectSocketInfo;
 }
 
 static struct ConnectionSocketInfo* handleConnectionReadyForWrite(
@@ -529,15 +529,15 @@ static struct ConnectionSocketInfo* handleConnectionReadyForTimeout(
   struct ConnectionSocketInfo* connectionSocketInfo,
   struct PollState* pollState)
 {
-  struct ConnectionSocketInfo* pDisconnectSocketInfo = NULL;
+  struct ConnectionSocketInfo* disconnectSocketInfo = NULL;
 
   if (connectionSocketInfo->waitingForConnect)
   {
     proxyLog("connect timeout fd %d", connectionSocketInfo->socket);
-    pDisconnectSocketInfo = connectionSocketInfo;
+    disconnectSocketInfo = connectionSocketInfo;
   }
 
-  return pDisconnectSocketInfo;
+  return disconnectSocketInfo;
 }
 
 static enum HandleConnectionReadyResult handleConnectionSocketReady(
@@ -550,7 +550,7 @@ static enum HandleConnectionReadyResult handleConnectionSocketReady(
     (struct ConnectionSocketInfo*) abstractSocketInfo;
   enum HandleConnectionReadyResult handleConnectionReadyResult =
     POLL_STATE_NOT_INVALIDATED_RESULT;
-  struct ConnectionSocketInfo* pDisconnectSocketInfo = NULL;
+  struct ConnectionSocketInfo* disconnectSocketInfo = NULL;
 
 #ifdef DEBUG_PROXY
   proxyLog("fd %d readyForRead %d readyForWrite %d readyForTimeout %d",
@@ -561,18 +561,18 @@ static enum HandleConnectionReadyResult handleConnectionSocketReady(
 #endif
 
   if (readyFDInfo->readyForRead &&
-      (!pDisconnectSocketInfo))
+      (disconnectSocketInfo == NULL))
   {
-    pDisconnectSocketInfo =
+    disconnectSocketInfo =
       handleConnectionReadyForRead(
         connectionSocketInfo,
         pollState);
   }
 
   if (readyFDInfo->readyForWrite &&
-      (!pDisconnectSocketInfo))
+      (disconnectSocketInfo == NULL))
   {
-    pDisconnectSocketInfo =
+    disconnectSocketInfo =
       handleConnectionReadyForWrite(
         connectionSocketInfo,
         pollState,
@@ -580,18 +580,18 @@ static enum HandleConnectionReadyResult handleConnectionSocketReady(
   }
 
   if (readyFDInfo->readyForTimeout &&
-      (!pDisconnectSocketInfo))
+      (disconnectSocketInfo == NULL))
   {
-    pDisconnectSocketInfo =
+    disconnectSocketInfo =
       handleConnectionReadyForTimeout(
         connectionSocketInfo,
         pollState);
   }
 
-  if (pDisconnectSocketInfo)
+  if (disconnectSocketInfo != NULL)
   {
     destroyConnection(
-      pDisconnectSocketInfo,
+      disconnectSocketInfo,
       pollState);
     handleConnectionReadyResult = POLL_STATE_INVALIDATED_RESULT;
   }
