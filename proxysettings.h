@@ -2,6 +2,7 @@
 #define PROXYSETTINGS_H
 
 #include "socketutil.h"
+#include <stdbool.h>
 #include <sys/queue.h>
 
 struct ServerAddrInfo
