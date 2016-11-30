@@ -609,6 +609,7 @@ static enum HandleConnectionReadyResult handleServerSocketReady(
     (struct ServerSocketInfo*) abstractSocketInfo;
   enum AcceptSocketResult acceptSocketResult = ACCEPT_SOCKET_RESULT_SUCCESS;
   int i;
+
   for (i = 0;
        (acceptSocketResult == ACCEPT_SOCKET_RESULT_SUCCESS) &&
        (i < MAX_OPERATIONS_FOR_ONE_FD);
