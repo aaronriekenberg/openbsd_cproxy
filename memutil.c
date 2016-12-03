@@ -1,4 +1,5 @@
 #include "memutil.h"
+#include <assert.h>
 #include <stdbool.h>
 #include <stdio.h>
 
@@ -37,6 +38,8 @@ extern void* resizeDynamicArray(
   size_t* capacity)
 {
   bool changedCapacity = false;
+
+  assert(capacity != NULL);
 
   while (newLength > (*capacity))
   {
