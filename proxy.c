@@ -647,7 +647,7 @@ static void runProxy(
   size_t i;
 
   proxyLogSetFlush(proxySettings->flushAfterLog);
-  proxyLog("flush stdout after log = %d", proxySettings->flushAfterLog);
+  proxyLog("log flush stdout = %s", (proxySettings->flushAfterLog ? "true" : "false"));
 
   proxyLog("num remote addresses = %lu", proxySettings->remoteAddrInfoArrayLength);
   for (i = 0; i < proxySettings->remoteAddrInfoArrayLength; ++i)
