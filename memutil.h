@@ -7,8 +7,14 @@ extern void* checkedCallocOne(
   const size_t size);
 
 extern void* checkedReallocarray(
-  void *ptr,
+  void* ptr,
   const size_t nmemb,
   const size_t size);
+
+extern void* resizeDynamicArray(
+  void* array,
+  const size_t memberSize,
+  const size_t newLength,
+  size_t* capacity);
 
 #endif

@@ -58,28 +58,12 @@ static int signalSafeKevent(
 static void resizeKeventArray(
   struct PollState* pollState)
 {
-  bool changedCapacity = false;
-  while ((pollState->numReadFDs +
-          pollState->numWriteAndTimeoutFDs) >
-         pollState->keventArrayCapacity)
-  {
-    changedCapacity = true;
-    if (pollState->keventArrayCapacity == 0)
-    {
-      pollState->keventArrayCapacity = 16;
-    }
-    else
-    {
-      pollState->keventArrayCapacity *= 2;
-    }
-  }
-  if (changedCapacity)
-  {
-    pollState->keventArray =
-      checkedReallocarray(pollState->keventArray,
-                          pollState->keventArrayCapacity,
-                          sizeof(struct kevent));
-  }
+  pollState->keventArray =
+    resizeDynamicArray(
+      pollState->keventArray,
+      pollState->numReadFDs + pollState->numWriteAndTimeoutFDs,
+      sizeof(struct kevent),
+      &(pollState->keventArrayCapacity));
 }
 
 void addPollFDForRead(

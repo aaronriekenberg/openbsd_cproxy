@@ -117,22 +117,12 @@ static void parseRemoteAddrPort(
 
     ++(proxySettings->remoteAddrInfoArrayLength);
 
-    if (proxySettings->remoteAddrInfoArrayLength >
-        (*remoteAddrInfoArrayCapacity))
-    {
-      if ((*remoteAddrInfoArrayCapacity) == 0)
-      {
-        (*remoteAddrInfoArrayCapacity) = 16;
-      }
-      else
-      {
-        (*remoteAddrInfoArrayCapacity) *= 2;
-      }
-      proxySettings->remoteAddrInfoArray = checkedReallocarray(
+    proxySettings->remoteAddrInfoArray =
+      resizeDynamicArray(
         proxySettings->remoteAddrInfoArray,
-        (*remoteAddrInfoArrayCapacity),
-        sizeof(struct RemoteAddrInfo));
-    }
+        proxySettings->remoteAddrInfoArrayLength,
+        sizeof(struct RemoteAddrInfo),
+        remoteAddrInfoArrayCapacity);
 
     remoteAddrInfo =
       proxySettings->remoteAddrInfoArray +
@@ -211,12 +201,6 @@ const struct ProxySettings* processArgs(
   {
     goto fail;
   }
-
-  // trim to remoteAddrInfoArrayLength
-  proxySettings->remoteAddrInfoArray = checkedReallocarray(
-    proxySettings->remoteAddrInfoArray,
-    proxySettings->remoteAddrInfoArrayLength,
-    sizeof(struct RemoteAddrInfo));
 
   return proxySettings;
 

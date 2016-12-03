@@ -1,4 +1,5 @@
 #include "memutil.h"
+#include <stdbool.h>
 #include <stdio.h>
 
 void* checkedCallocOne(
@@ -27,4 +28,36 @@ void* checkedReallocarray(
     abort();
   }
   return retVal;
+}
+
+extern void* resizeDynamicArray(
+  void* array,
+  const size_t newLength,
+  const size_t memberSize,
+  size_t* capacity)
+{
+  bool changedCapacity = false;
+
+  while (newLength > (*capacity))
+  {
+    changedCapacity = true;
+    if ((*capacity) == 0)
+    {
+      (*capacity) = 16;
+    }
+    else
+    {
+      (*capacity) *= 2;
+    }
+  }
+
+  if (changedCapacity)
+  {
+    array = checkedReallocarray(
+      array,
+      *capacity,
+      memberSize);
+  }
+
+  return array;
 }
