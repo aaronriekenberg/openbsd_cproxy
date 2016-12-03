@@ -31,7 +31,7 @@ void* checkedReallocarray(
   return retVal;
 }
 
-extern void* resizeDynamicArray(
+void* resizeDynamicArray(
   void* array,
   const size_t newLength,
   const size_t memberSize,
