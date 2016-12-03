@@ -13,8 +13,8 @@ extern void* checkedReallocarray(
 
 extern void* resizeDynamicArray(
   void* array,
-  const size_t memberSize,
   const size_t newLength,
+  const size_t memberSize,
   size_t* capacity);
 
 #endif

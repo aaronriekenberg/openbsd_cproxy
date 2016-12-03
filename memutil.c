@@ -43,7 +43,7 @@ extern void* resizeDynamicArray(
     changedCapacity = true;
     if ((*capacity) == 0)
     {
-      (*capacity) = 16;
+      (*capacity) = 2;
     }
     else
     {
