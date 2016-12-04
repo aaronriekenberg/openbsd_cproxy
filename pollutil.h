@@ -6,28 +6,28 @@
 
 struct PollState;
 
-extern struct PollState* newPollState();
+struct PollState* newPollState();
 
-extern void addPollFDForRead(
+void addPollFDForRead(
   struct PollState* pollState,
   int fd,
   void* data);
 
-extern void removePollFDForRead(
+void removePollFDForRead(
   struct PollState* pollState,
   int fd);
 
-extern void addPollFDForWriteAndTimeout(
+void addPollFDForWriteAndTimeout(
   struct PollState* pollState,
   int fd,
   void* data,
   uint32_t timeoutMillseconds);
 
-extern void removePollFDForWriteAndTimeout(
+void removePollFDForWriteAndTimeout(
   struct PollState* pollState,
   int fd);
 
-extern const struct PollResult* blockingPoll(
+const struct PollResult* blockingPoll(
   struct PollState* pollState);
 
 #endif

@@ -24,40 +24,40 @@ struct AddrPortStrings
   char portString[MAX_PORT_STRING_LENGTH];
 };
 
-extern bool addrInfoToNameAndPort(
+bool addrInfoToNameAndPort(
   const struct addrinfo* addrinfo,
   struct AddrPortStrings* addrPortStrings);
 
-extern bool sockAddrInfoToNameAndPort(
+bool sockAddrInfoToNameAndPort(
   const struct SockAddrInfo* sockAddrInfo,
   struct AddrPortStrings* addrPortStrings);
 
-extern bool createNonBlockingSocket(
+bool createNonBlockingSocket(
   const struct addrinfo* addrinfo,
   int* socketFD);
 
-extern bool setSocketListening(
+bool setSocketListening(
   const int socket);
 
-extern bool setSocketReuseAddress(
+bool setSocketReuseAddress(
   const int socket);
 
-extern bool bindSocket(
+bool bindSocket(
   const int socket,
   const struct addrinfo* addrinfo);
 
-extern bool setSocketSplice(
+bool setSocketSplice(
   const int fromSocket,
   const int toSocket);
 
-extern bool setBidirectionalSplice(
+bool setBidirectionalSplice(
   const int socket1,
   const int socket2);
 
-extern off_t getSpliceBytesTransferred(
+off_t getSpliceBytesTransferred(
   const int socket);
 
-extern int getSocketError(
+int getSocketError(
   const int socket);
 
 enum AcceptSocketResult
@@ -67,12 +67,12 @@ enum AcceptSocketResult
   ACCEPT_SOCKET_RESULT_WOULD_BLOCK
 };
 
-extern enum AcceptSocketResult acceptSocket(
+enum AcceptSocketResult acceptSocket(
   const int socketFD,
   int* acceptFD,
   struct SockAddrInfo* sockAddrInfo);
 
-extern bool getSocketName(
+bool getSocketName(
   const int socketFD,
   struct SockAddrInfo* sockAddrInfo);
 
@@ -83,7 +83,7 @@ enum ConnectSocketResult
   CONNECT_SOCKET_RESULT_IN_PROGRESS
 };
 
-extern enum ConnectSocketResult connectSocket(
+enum ConnectSocketResult connectSocket(
   const int socket,
   const struct addrinfo* addrinfo);
 

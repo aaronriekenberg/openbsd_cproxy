@@ -3,15 +3,15 @@
 
 #include <stdlib.h>
 
-extern void* checkedCallocOne(
+void* checkedCallocOne(
   const size_t size);
 
-extern void* checkedReallocarray(
+void* checkedReallocarray(
   void* ptr,
   const size_t nmemb,
   const size_t size);
 
-extern void* resizeDynamicArray(
+void* resizeDynamicArray(
   void* array,
   const size_t newLength,
   const size_t memberSize,

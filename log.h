@@ -3,8 +3,8 @@
 
 #include <stdbool.h>
 
-extern void proxyLogSetFlush(bool enabled);
+void proxyLogSetFlush(bool enabled);
 
-extern void proxyLog(const char* format, ...);
+void proxyLog(const char* format, ...);
 
 #endif

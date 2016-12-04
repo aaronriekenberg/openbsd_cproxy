@@ -19,7 +19,7 @@ struct PollResult
   size_t arrayCapacity;
 };
 
-extern void setPollResultNumReadyFDs(
+void setPollResultNumReadyFDs(
   struct PollResult* pollResult,
   size_t numReadyFDs);
 

@@ -26,7 +26,7 @@ struct ProxySettings
   bool flushAfterLog;
 };
 
-extern const struct ProxySettings* processArgs(
+const struct ProxySettings* processArgs(
   int argc,
   char** argv);
 

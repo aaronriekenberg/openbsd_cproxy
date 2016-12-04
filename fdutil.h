@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 
-extern bool signalSafeClose(
+bool signalSafeClose(
   int fd);
 
 #endif
