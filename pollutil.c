@@ -17,12 +17,13 @@ struct PollState
   size_t numWriteAndTimeoutFDs;
   struct kevent* keventArray;
   size_t keventArrayCapacity;
-  struct PollResult pollResult;
+  struct PollResult* pollResult;
 };
 
 struct PollState* newPollState()
 {
   struct PollState* pollState = checkedCallocOne(sizeof(struct PollState));
+
   pollState->kqueueFD = kqueue();
   if (pollState->kqueueFD == -1)
   {
@@ -33,6 +34,9 @@ struct PollState* newPollState()
   }
   proxyLog("created kqueue (fd=%d)",
            pollState->kqueueFD);
+
+  pollState->pollResult = newPollResult();
+
   return pollState;
 }
 
@@ -182,6 +186,8 @@ const struct PollResult* blockingPoll(
 {
   size_t i;
   int retVal;
+  struct ReadyFDInfo* readyFDInfo;
+  const struct kevent* readyKEvent;
 
   assert(pollState != NULL);
 
@@ -207,20 +213,21 @@ const struct PollResult* blockingPoll(
   }
 
   setPollResultNumReadyFDs(
-    &(pollState->pollResult),
+    pollState->pollResult,
     retVal);
 
+  readyFDInfo = pollState->pollResult->readyFDInfoArray;
+  readyKEvent = pollState->keventArray;
   for (i = 0; i < retVal; ++i)
   {
-    struct ReadyFDInfo* readyFDInfo =
-      pollState->pollResult.readyFDInfoArray + i;
-    const struct kevent* readyKEvent =
-      pollState->keventArray + i;
     readyFDInfo->data = readyKEvent->udata;
     readyFDInfo->readyForRead = (readyKEvent->filter == EVFILT_READ);
     readyFDInfo->readyForWrite = (readyKEvent->filter == EVFILT_WRITE);
     readyFDInfo->readyForTimeout = (readyKEvent->filter == EVFILT_TIMER);
+
+    ++readyFDInfo;
+    ++readyKEvent;
   }
 
-  return (&(pollState->pollResult));
+  return pollState->pollResult;
 }

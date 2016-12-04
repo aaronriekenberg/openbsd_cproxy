@@ -19,6 +19,8 @@ struct PollResult
   size_t arrayCapacity;
 };
 
+struct PollResult* newPollResult();
+
 void setPollResultNumReadyFDs(
   struct PollResult* pollResult,
   size_t numReadyFDs);

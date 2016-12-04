@@ -2,6 +2,11 @@
 #include "memutil.h"
 #include "pollresult.h"
 
+struct PollResult* newPollResult()
+{
+  return checkedCallocOne(sizeof(struct PollResult));
+}
+
 void setPollResultNumReadyFDs(
   struct PollResult* pollResult,
   size_t numReadyFDs)
