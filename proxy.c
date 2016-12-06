@@ -411,7 +411,7 @@ static void printDisconnectMessage(
     ((connectionSocketInfo->type == CLIENT_TO_PROXY) ?
      "client to proxy" :
      "proxy to remote");
-  proxyLog("disconnect %s %s:%s -> %s:%s (fd=%d,bytes=%zu)",
+  proxyLog("disconnect %s %s:%s -> %s:%s (fd=%d,bytes=%zd)",
            typeString,
            connectionSocketInfo->clientAddrPortStrings.addrString,
            connectionSocketInfo->clientAddrPortStrings.portString,
