@@ -9,7 +9,7 @@ void* checkedCallocOne(
   void* retVal = calloc(1, size);
   if (retVal == NULL)
   {
-    printf("calloc failed nmemb %u size %lu\n",
+    printf("calloc failed nmemb %u size %zu\n",
            1, size);
     abort();
   }
@@ -24,7 +24,7 @@ void* checkedReallocarray(
   void* retVal = reallocarray(ptr, nmemb, size);
   if (retVal == NULL)
   {
-    printf("reallocarray failed ptr %p nmemb %lu size %lu\n",
+    printf("reallocarray failed ptr %p nmemb %zu size %zu\n",
            ptr, nmemb, size);
     abort();
   }
