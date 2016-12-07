@@ -20,9 +20,9 @@ void proxyLog(const char* format, ...)
   va_start(args, format);
 
   printTimeString();
-  putchar(' ');
+  fputc(' ', stdout);
   vprintf(format, args);
-  putchar('\n');
+  fputc('\n', stdout);
 
   if (flushAfterLog)
   {
