@@ -1,6 +1,8 @@
 #ifndef TIMEUTIL_H
 #define TIMEUTIL_H
 
-void printTimeString();
+#include <stdio.h>
+
+void printTimeString(FILE* fp);
 
 #endif

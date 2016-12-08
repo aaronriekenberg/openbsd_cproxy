@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void printTimeString()
+void printTimeString(FILE* fp)
 {
   size_t charsWritten;
   char buffer[80];
@@ -36,5 +36,5 @@ void printTimeString()
   }
 
   snprintf(buffer + charsWritten, 8, ".%06ld", tv.tv_usec);
-  fputs(buffer, stdout);
+  fputs(buffer, fp);
 }
