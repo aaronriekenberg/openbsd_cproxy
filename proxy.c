@@ -673,11 +673,11 @@ static void runProxy(
     bool pollStateInvalidated = false;
     const struct PollResult* pollResult = blockingPoll(pollState);
     const struct ReadyFDInfo* readyFDInfo = pollResult->readyFDInfoArray;
+    const struct ReadyFDInfo* endReadyFDInfo =
+      readyFDInfo + pollResult->numReadyFDs;
 
-    for (i = 0; 
-         (!pollStateInvalidated) &&
-         (i < pollResult->numReadyFDs);
-         ++i, ++readyFDInfo)
+    for (; (!pollStateInvalidated) && (readyFDInfo != endReadyFDInfo);
+         ++readyFDInfo)
     {
       struct AbstractSocketInfo* abstractSocketInfo = readyFDInfo->data;
       const enum HandleConnectionReadyResult handleConnectionReadyResult =

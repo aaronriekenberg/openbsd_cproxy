@@ -184,10 +184,10 @@ void removePollFDForWriteAndTimeout(
 const struct PollResult* blockingPoll(
   struct PollState* pollState)
 {
-  size_t i;
   int retVal;
   struct ReadyFDInfo* readyFDInfo;
   const struct kevent* readyKEvent;
+  const struct kevent* endReadyKEvent;
 
   assert(pollState != NULL);
 
@@ -217,8 +217,11 @@ const struct PollResult* blockingPoll(
     retVal);
 
   readyFDInfo = pollState->pollResult->readyFDInfoArray;
+
   readyKEvent = pollState->keventArray;
-  for (i = 0; i < retVal; ++i, ++readyFDInfo, ++readyKEvent)
+  endReadyKEvent = readyKEvent + retVal;
+
+  for (; readyKEvent != endReadyKEvent; ++readyFDInfo, ++readyKEvent)
   {
     readyFDInfo->data = readyKEvent->udata;
     readyFDInfo->readyForRead = (readyKEvent->filter == EVFILT_READ);
