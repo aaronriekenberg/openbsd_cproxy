@@ -641,7 +641,8 @@ static enum HandleConnectionReadyResult handleServerSocketReady(
   return POLL_STATE_NOT_INVALIDATED_RESULT;
 }
 
-static void logSettings(const struct ProxySettings* proxySettings)
+static void logSettings(
+  const struct ProxySettings* proxySettings)
 {
   size_t i;
 
