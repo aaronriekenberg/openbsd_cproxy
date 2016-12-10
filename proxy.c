@@ -15,6 +15,7 @@
 #include <unistd.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
+#include <sys/stdint.h>
 #include <sys/types.h>
 
 #define MAX_OPERATIONS_FOR_ONE_FD (100)
@@ -411,14 +412,14 @@ static void printDisconnectMessage(
     ((connectionSocketInfo->type == CLIENT_TO_PROXY) ?
      "client to proxy" :
      "proxy to remote");
-  proxyLog("disconnect %s %s:%s -> %s:%s (fd=%d,bytes=%zd)",
+  proxyLog("disconnect %s %s:%s -> %s:%s (fd=%d,bytes=%jd)",
            typeString,
            connectionSocketInfo->clientAddrPortStrings.addrString,
            connectionSocketInfo->clientAddrPortStrings.portString,
            connectionSocketInfo->serverAddrPortStrings.addrString,
            connectionSocketInfo->serverAddrPortStrings.portString,
            connectionSocketInfo->socket,
-           getSpliceBytesTransferred(connectionSocketInfo->socket));
+           (intmax_t)getSpliceBytesTransferred(connectionSocketInfo->socket));
 }
 
 static void destroyConnection(

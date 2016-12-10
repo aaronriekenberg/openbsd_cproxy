@@ -36,7 +36,7 @@ void printTimeString(FILE* fp)
     abort();
   }
 
-  snprintf(buffer + charsWritten, 8, ".%06ld", tv.tv_usec);
+  snprintf(buffer + charsWritten, 8, ".%06ld", (long)tv.tv_usec);
 
   fputs(buffer, fp);
 }
