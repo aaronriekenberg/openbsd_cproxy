@@ -218,15 +218,12 @@ const struct PollResult* blockingPoll(
 
   readyFDInfo = pollState->pollResult->readyFDInfoArray;
   readyKEvent = pollState->keventArray;
-  for (i = 0; i < retVal; ++i)
+  for (i = 0; i < retVal; ++i, ++readyFDInfo, ++readyKEvent)
   {
     readyFDInfo->data = readyKEvent->udata;
     readyFDInfo->readyForRead = (readyKEvent->filter == EVFILT_READ);
     readyFDInfo->readyForWrite = (readyKEvent->filter == EVFILT_WRITE);
     readyFDInfo->readyForTimeout = (readyKEvent->filter == EVFILT_TIMER);
-
-    ++readyFDInfo;
-    ++readyKEvent;
   }
 
   return pollState->pollResult;

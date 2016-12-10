@@ -677,7 +677,7 @@ static void runProxy(
     for (i = 0; 
          (!pollStateInvalidated) &&
          (i < pollResult->numReadyFDs);
-         ++i)
+         ++i, ++readyFDInfo)
     {
       struct AbstractSocketInfo* abstractSocketInfo = readyFDInfo->data;
       const enum HandleConnectionReadyResult handleConnectionReadyResult =
@@ -687,7 +687,6 @@ static void runProxy(
       {
         pollStateInvalidated = true;
       }
-      ++readyFDInfo;
     }
   }
 }
