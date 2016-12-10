@@ -30,7 +30,7 @@ void printTimeString(FILE* fp)
     printf("strftime error\n");
     abort();
   }
-  else if (charsWritten > (sizeof(buffer) - 7 - 1))
+  else if (charsWritten > (sizeof(buffer) - 8))
   {
     printf("strftime overflow\n");
     abort();
