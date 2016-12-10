@@ -641,13 +641,10 @@ static enum HandleConnectionReadyResult handleServerSocketReady(
   return POLL_STATE_NOT_INVALIDATED_RESULT;
 }
 
-static void runProxy(
-  const struct ProxySettings* proxySettings)
+static void logSettings(const struct ProxySettings* proxySettings)
 {
-  struct PollState* pollState;
   size_t i;
 
-  proxyLogSetFlush(proxySettings->flushAfterLog);
   proxyLog("log flush stdout = %s",
            (proxySettings->flushAfterLog ? "true" : "false"));
 
@@ -661,6 +658,16 @@ static void runProxy(
   }
   proxyLog("connect timeout milliseconds = %d",
            proxySettings->connectTimeoutMS);
+}
+
+static void runProxy(
+  const struct ProxySettings* proxySettings)
+{
+  struct PollState* pollState;
+
+  proxyLogSetFlush(proxySettings->flushAfterLog);
+
+  logSettings(proxySettings);
 
   pollState = newPollState();
 
@@ -670,11 +677,11 @@ static void runProxy(
 
   while (true)
   {
-    bool pollStateInvalidated = false;
     const struct PollResult* pollResult = blockingPoll(pollState);
     const struct ReadyFDInfo* readyFDInfo = pollResult->readyFDInfoArray;
     const struct ReadyFDInfo* endReadyFDInfo =
       readyFDInfo + pollResult->numReadyFDs;
+    bool pollStateInvalidated = false;
 
     for (; (!pollStateInvalidated) && (readyFDInfo != endReadyFDInfo);
          ++readyFDInfo)
