@@ -9,32 +9,34 @@ void printTimeString(FILE* fp)
   size_t charsWritten;
   char buffer[80];
   struct timeval tv;
-  struct tm tm;
+  struct tm* tm;
 
-  if (gettimeofday(&tv, NULL) < 0)
+  if (gettimeofday(&tv, NULL) == -1)
   {
     printf("gettimeofday error\n");
     abort();
   }
 
-  if (!localtime_r(&tv.tv_sec, &tm))
+  tm = localtime(&tv.tv_sec);
+  if (tm == NULL)
   {
-    printf("localtime_r error\n");
+    printf("localtime error\n");
     abort();
   }
 
-  charsWritten = strftime(buffer, 80, "%Y-%b-%d %H:%M:%S", &tm);
+  charsWritten = strftime(buffer, sizeof(buffer), "%Y-%b-%d %H:%M:%S", tm);
   if (charsWritten == 0)
   {
     printf("strftime error\n");
     abort();
   }
-  else if (charsWritten > (80 - 7 - 1))
+  else if (charsWritten > (sizeof(buffer) - 7 - 1))
   {
     printf("strftime overflow\n");
     abort();
   }
 
   snprintf(buffer + charsWritten, 8, ".%06ld", tv.tv_usec);
+
   fputs(buffer, fp);
 }
