@@ -27,6 +27,12 @@ void removePollFDForWriteAndTimeout(
   struct PollState* pollState,
   int fd);
 
+void addPollIDForPeriodicTimer(
+  struct PollState* pollState,
+  int id,
+  void* data,
+  uint32_t periodMilliseconds);
+
 const struct PollResult* blockingPoll(
   struct PollState* pollState);
 

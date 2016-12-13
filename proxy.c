@@ -5,7 +5,6 @@
 #include "pollutil.h"
 #include "proxysettings.h"
 #include "socketutil.h"
-#include <assert.h>
 #include <errno.h>
 #include <signal.h>
 #include <stdio.h>
@@ -17,20 +16,17 @@
 #include <sys/socket.h>
 #include <sys/stdint.h>
 #include <sys/types.h>
+#include <sys/queue.h>
 
 #define MAX_OPERATIONS_FOR_ONE_FD (100)
 
-enum HandleConnectionReadyResult
-{
-  POLL_STATE_INVALIDATED_RESULT,
-  POLL_STATE_NOT_INVALIDATED_RESULT
-};
+#define PERIODIC_TIMER_ID (-1)
 
 struct AbstractSocketInfo;
 
-typedef enum HandleConnectionReadyResult (*HandleConnectionReadyFunction)(
+typedef void (*HandleConnectionReadyFunction)(
   struct AbstractSocketInfo* abstractSocketInfo,
-  const struct ReadyFDInfo* readyFDInfo,
+  const struct ReadyEventInfo* readyEventInfo,
   const struct ProxySettings* proxySettings,
   struct PollState* pollState);
 
@@ -45,9 +41,9 @@ struct ServerSocketInfo
   int socket;
 };
 
-static enum HandleConnectionReadyResult handleServerSocketReady(
+static void handleServerSocketReady(
   struct AbstractSocketInfo* abstractSocketInfo,
-  const struct ReadyFDInfo* readyFDInfo,
+  const struct ReadyEventInfo* readyEventInfo,
   const struct ProxySettings* proxySettings,
   struct PollState* pollState);
 
@@ -62,16 +58,24 @@ struct ConnectionSocketInfo
   HandleConnectionReadyFunction handleConnectionReadyFunction;
   int socket;
   enum ConnectionSocketInfoType type;
+  bool markedForDestruction;
   bool waitingForConnect;
   bool waitingForRead;
   struct ConnectionSocketInfo* relatedConnectionSocketInfo;
   struct AddrPortStrings clientAddrPortStrings;
   struct AddrPortStrings serverAddrPortStrings;
+  TAILQ_ENTRY(ConnectionSocketInfo) entry;
 };
 
-static enum HandleConnectionReadyResult handleConnectionSocketReady(
+static TAILQ_HEAD(,ConnectionSocketInfo) connectionSocketInfoList =
+  TAILQ_HEAD_INITIALIZER(connectionSocketInfoList);
+
+static TAILQ_HEAD(,ConnectionSocketInfo) destroyConnectionSocketInfoList =
+  TAILQ_HEAD_INITIALIZER(destroyConnectionSocketInfoList);
+
+static void handleConnectionSocketReady(
   struct AbstractSocketInfo* abstractSocketInfo,
-  const struct ReadyFDInfo* readyFDInfo,
+  const struct ReadyEventInfo* readyEventInfo,
   const struct ProxySettings* proxySettings,
   struct PollState* pollState);
 
@@ -397,12 +401,55 @@ static void handleNewClientSocket(
   addConnectionSocketInfoToPollState(pollState, connInfo1, proxySettings);
   addConnectionSocketInfoToPollState(pollState, connInfo2, proxySettings);
 
+  TAILQ_INSERT_TAIL(
+    &connectionSocketInfoList,
+    connInfo1,
+    entry);
+
+  TAILQ_INSERT_TAIL(
+    &connectionSocketInfoList,
+    connInfo2,
+    entry);
+
   return;
 
 fail:
   free(connInfo1);
   free(connInfo2);
   signalSafeClose(clientSocket);
+}
+
+static void markForDestruction(
+  struct ConnectionSocketInfo* connectionSocketInfo)
+{
+  struct ConnectionSocketInfo* relatedConnectionSocketInfo = 
+    connectionSocketInfo->relatedConnectionSocketInfo;
+
+  if (!connectionSocketInfo->markedForDestruction)
+  {
+    connectionSocketInfo->markedForDestruction = true;
+    TAILQ_REMOVE(
+      &connectionSocketInfoList,
+      connectionSocketInfo,
+      entry);
+    TAILQ_INSERT_TAIL(
+      &destroyConnectionSocketInfoList,
+      connectionSocketInfo,
+      entry);
+  }
+
+  if (!relatedConnectionSocketInfo->markedForDestruction)
+  {
+    relatedConnectionSocketInfo->markedForDestruction = true;
+    TAILQ_REMOVE(
+      &connectionSocketInfoList,
+      relatedConnectionSocketInfo,
+      entry);
+    TAILQ_INSERT_TAIL(
+      &destroyConnectionSocketInfoList,
+      relatedConnectionSocketInfo,
+      entry);
+  }
 }
 
 static void printDisconnectMessage(
@@ -430,17 +477,34 @@ static void destroyConnection(
     connectionSocketInfo->relatedConnectionSocketInfo;
 
   printDisconnectMessage(connectionSocketInfo);
+
   removeConnectionSocketInfoFromPollState(pollState, connectionSocketInfo);
   signalSafeClose(connectionSocketInfo->socket);
+
   free(connectionSocketInfo);
+
   connectionSocketInfo = NULL;
 
   if (relatedConnectionSocketInfo != NULL)
   {
     relatedConnectionSocketInfo->relatedConnectionSocketInfo = NULL;
-    destroyConnection(
-      relatedConnectionSocketInfo,
-      pollState);
+  }
+}
+
+static void destroyMarkedConnections(
+  struct PollState* pollState)
+{
+  struct ConnectionSocketInfo* connectionSocketInfo;
+  struct ConnectionSocketInfo* tmp;
+
+  TAILQ_FOREACH_SAFE(
+    connectionSocketInfo,
+    &destroyConnectionSocketInfoList,
+    entry,
+    tmp)
+  {
+    TAILQ_REMOVE(&destroyConnectionSocketInfoList, connectionSocketInfo, entry);
+    destroyConnection(connectionSocketInfo, pollState);
   }
 }
 
@@ -470,8 +534,6 @@ static struct ConnectionSocketInfo* handleConnectionReadyForWrite(
   if (connectionSocketInfo->waitingForConnect)
   {
     int socketError;
-
-    assert(relatedConnectionSocketInfo != NULL);
 
     socketError = getSocketError(connectionSocketInfo->socket);
     if (socketError == EINPROGRESS)
@@ -541,27 +603,30 @@ static struct ConnectionSocketInfo* handleConnectionReadyForTimeout(
   return disconnectSocketInfo;
 }
 
-static enum HandleConnectionReadyResult handleConnectionSocketReady(
+static void handleConnectionSocketReady(
   struct AbstractSocketInfo* abstractSocketInfo,
-  const struct ReadyFDInfo* readyFDInfo,
+  const struct ReadyEventInfo* readyEventInfo,
   const struct ProxySettings* proxySettings,
   struct PollState* pollState)
 {
   struct ConnectionSocketInfo* connectionSocketInfo =
     (struct ConnectionSocketInfo*) abstractSocketInfo;
-  enum HandleConnectionReadyResult handleConnectionReadyResult =
-    POLL_STATE_NOT_INVALIDATED_RESULT;
   struct ConnectionSocketInfo* disconnectSocketInfo = NULL;
 
 #ifdef DEBUG_PROXY
   proxyLog("fd %d readyForRead %d readyForWrite %d readyForTimeout %d",
            connectionSocketInfo->socket,
-           readyFDInfo->readyForRead,
-           readyFDInfo->readyForWrite,
-           readyFDInfo->readyForTimeout);
+           readyEventInfo->readyForRead,
+           readyEventInfo->readyForWrite,
+           readyEventInfo->readyForTimeout);
 #endif
 
-  if (readyFDInfo->readyForRead &&
+  if (connectionSocketInfo->markedForDestruction)
+  {
+    return;
+  }
+
+  if (readyEventInfo->readyForRead &&
       (disconnectSocketInfo == NULL))
   {
     disconnectSocketInfo =
@@ -570,7 +635,7 @@ static enum HandleConnectionReadyResult handleConnectionSocketReady(
         pollState);
   }
 
-  if (readyFDInfo->readyForWrite &&
+  if (readyEventInfo->readyForWrite &&
       (disconnectSocketInfo == NULL))
   {
     disconnectSocketInfo =
@@ -580,7 +645,7 @@ static enum HandleConnectionReadyResult handleConnectionSocketReady(
         proxySettings);
   }
 
-  if (readyFDInfo->readyForTimeout &&
+  if (readyEventInfo->readyForTimeout &&
       (disconnectSocketInfo == NULL))
   {
     disconnectSocketInfo =
@@ -591,18 +656,13 @@ static enum HandleConnectionReadyResult handleConnectionSocketReady(
 
   if (disconnectSocketInfo != NULL)
   {
-    destroyConnection(
-      disconnectSocketInfo,
-      pollState);
-    handleConnectionReadyResult = POLL_STATE_INVALIDATED_RESULT;
+    markForDestruction(disconnectSocketInfo);
   }
-
-  return handleConnectionReadyResult;
 }
 
-static enum HandleConnectionReadyResult handleServerSocketReady(
+static void handleServerSocketReady(
   struct AbstractSocketInfo* abstractSocketInfo,
-  const struct ReadyFDInfo* readyFDInfo,
+  const struct ReadyEventInfo* readyEventInfo,
   const struct ProxySettings* proxySettings,
   struct PollState* pollState)
 {
@@ -638,7 +698,39 @@ static enum HandleConnectionReadyResult handleServerSocketReady(
         pollState);
     }
   }
-  return POLL_STATE_NOT_INVALIDATED_RESULT;
+}
+
+static void periodicTimerPop()
+{
+  const struct ConnectionSocketInfo* connectionSocketInfo;
+  size_t numConnections = 0;
+
+  TAILQ_FOREACH(connectionSocketInfo, &connectionSocketInfoList, entry)
+  {
+    if (numConnections == 0)
+    {
+      proxyLog("Active connections: [");
+    }
+
+    proxyLogNoTime("  fd=%d rfd=%d CW: %d RW: %d %s:%s->%s:%s bytes=%jd",
+                   connectionSocketInfo->socket,
+                   connectionSocketInfo->relatedConnectionSocketInfo->socket,
+                   connectionSocketInfo->waitingForConnect,
+                   connectionSocketInfo->waitingForRead,
+                   connectionSocketInfo->clientAddrPortStrings.addrString,
+                   connectionSocketInfo->clientAddrPortStrings.portString,
+                   connectionSocketInfo->serverAddrPortStrings.addrString,
+                   connectionSocketInfo->serverAddrPortStrings.portString,
+                   (intmax_t)getSpliceBytesTransferred(
+                               connectionSocketInfo->socket));
+
+    ++numConnections;
+  }
+
+  if (numConnections > 0)
+  {
+    proxyLogNoTime("]");
+  }
 }
 
 static void logSettings(
@@ -659,6 +751,8 @@ static void logSettings(
   }
   proxyLog("connect timeout milliseconds = %d",
            proxySettings->connectTimeoutMS);
+  proxyLog("periodic log milliseconds = %d",
+           proxySettings->periodicLogMS);
 }
 
 static void runProxy(
@@ -676,26 +770,39 @@ static void runProxy(
     proxySettings,
     pollState);
 
+  if (proxySettings->periodicLogMS > 0)
+  {
+    addPollIDForPeriodicTimer(
+      pollState,
+      PERIODIC_TIMER_ID,
+      NULL,
+      proxySettings->periodicLogMS);
+  }
+
   while (true)
   {
     const struct PollResult* pollResult = blockingPoll(pollState);
-    const struct ReadyFDInfo* readyFDInfo = pollResult->readyFDInfoArray;
-    const struct ReadyFDInfo* endReadyFDInfo =
-      readyFDInfo + pollResult->numReadyFDs;
-    bool pollStateInvalidated = false;
+    const struct ReadyEventInfo* readyEventInfo =
+      pollResult->readyEventInfoArray;
+    const struct ReadyEventInfo* endReadyEventInfo =
+      readyEventInfo + pollResult->numReadyEvents;
 
-    for (; (!pollStateInvalidated) && (readyFDInfo != endReadyFDInfo);
-         ++readyFDInfo)
+    for (; readyEventInfo != endReadyEventInfo;
+         ++readyEventInfo)
     {
-      struct AbstractSocketInfo* abstractSocketInfo = readyFDInfo->data;
-      const enum HandleConnectionReadyResult handleConnectionReadyResult =
-        (*(abstractSocketInfo->handleConnectionReadyFunction))(
-          abstractSocketInfo, readyFDInfo, proxySettings, pollState);
-      if (handleConnectionReadyResult == POLL_STATE_INVALIDATED_RESULT)
+      if (readyEventInfo->id == PERIODIC_TIMER_ID)
       {
-        pollStateInvalidated = true;
+        periodicTimerPop();
+      }
+      else
+      {
+        struct AbstractSocketInfo* abstractSocketInfo = readyEventInfo->data;
+        (*(abstractSocketInfo->handleConnectionReadyFunction))(
+          abstractSocketInfo, readyEventInfo, proxySettings, pollState);
       }
     }
+
+    destroyMarkedConnections(pollState);
   }
 }
 

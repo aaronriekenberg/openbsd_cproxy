@@ -7,4 +7,6 @@ void proxyLogSetFlush(bool enabled);
 
 void proxyLog(const char* format, ...);
 
+void proxyLogNoTime(const char* format, ...);
+
 #endif

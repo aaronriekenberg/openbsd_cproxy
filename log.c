@@ -31,3 +31,20 @@ void proxyLog(const char* format, ...)
 
   va_end(args);
 }
+
+void proxyLogNoTime(const char* format, ...)
+{
+  va_list args;
+
+  va_start(args, format);
+
+  vfprintf(stdout, format, args);
+  fputc('\n', stdout);
+
+  if (flushAfterLog)
+  {
+    fflush(stdout);
+  }
+
+  va_end(args);
+}

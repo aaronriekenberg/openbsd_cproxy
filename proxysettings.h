@@ -23,6 +23,7 @@ struct ProxySettings
   struct RemoteAddrInfo* remoteAddrInfoArray;
   size_t remoteAddrInfoArrayLength;
   uint32_t connectTimeoutMS;
+  uint32_t periodicLogMS;
   bool flushAfterLog;
 };
 

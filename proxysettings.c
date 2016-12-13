@@ -15,11 +15,13 @@ static void printUsageAndExit()
          "         [-l <local addr>:<local port>...]\n"
          "         -r <remote addr>:<remote port>\n"
          "         [-r <remote addr>:<remote port>...]\n"
-         "         [-c <connect timeout milliseconds>] [-f]\n"
+         "         [-c <connect timeout milliseconds>]\n"
+         "         [-p <periodic log milliseconds>] [-f]\n"
          "Arguments:\n"
          "  -l <local addr>:<local port>: specify listen address and port\n"
          "  -r <remote addr>:<remote port>: specify remote address and port\n"
          "  -c <connect timeout milliseconds>: specify connection timeout\n"
+         "  -p <periodic log milliseconds>: specify periodic log interval\n"
          "  -f: flush stdout on each log\n");
   exit(1);
 }
@@ -158,6 +160,18 @@ static uint32_t parseConnectTimeoutMS(char* optarg)
   return connectTimeoutMS;
 }
 
+static uint32_t parsePeriodicLogMS(char* optarg)
+{
+  const char* errstr;
+  const long long periodicLogMS = strtonum(optarg, 1, 3600 * 1000, &errstr);
+  if (errstr != NULL)
+  {
+    proxyLog("invalid periodic log timeout argument '%s': %s", optarg, errstr);
+    exit(1);
+  }
+  return periodicLogMS;
+}
+
 const struct ProxySettings* processArgs(
   int argc,
   char** argv)
@@ -170,7 +184,7 @@ const struct ProxySettings* processArgs(
   proxySettings->connectTimeoutMS = DEFAULT_CONNECT_TIMEOUT_MS;
   SIMPLEQ_INIT(&(proxySettings->serverAddrInfoList));
 
-  while ((retVal = getopt(argc, argv, "c:fl:r:")) != -1)
+  while ((retVal = getopt(argc, argv, "c:fl:p:r:")) != -1)
   {
     switch (retVal)
     {
@@ -184,6 +198,10 @@ const struct ProxySettings* processArgs(
 
     case 'l':
       parseServerAddrPort(optarg, proxySettings);
+      break;
+
+    case 'p':
+      proxySettings->periodicLogMS = parsePeriodicLogMS(optarg);
       break;
 
     case 'r':

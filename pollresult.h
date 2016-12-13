@@ -4,8 +4,9 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-struct ReadyFDInfo
+struct ReadyEventInfo
 {
+  int id;
   void* data;
   bool readyForRead;
   bool readyForWrite;
@@ -14,15 +15,15 @@ struct ReadyFDInfo
 
 struct PollResult
 {
-  size_t numReadyFDs;
-  struct ReadyFDInfo* readyFDInfoArray;
+  size_t numReadyEvents;
+  struct ReadyEventInfo* readyEventInfoArray;
   size_t arrayCapacity;
 };
 
 struct PollResult* newPollResult();
 
-void setPollResultNumReadyFDs(
+void setPollResultNumReadyEvents(
   struct PollResult* pollResult,
-  size_t numReadyFDs);
+  size_t numReadyEvents);
 
 #endif

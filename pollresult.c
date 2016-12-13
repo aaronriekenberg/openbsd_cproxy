@@ -7,18 +7,18 @@ struct PollResult* newPollResult()
   return checkedCallocOne(sizeof(struct PollResult));
 }
 
-void setPollResultNumReadyFDs(
+void setPollResultNumReadyEvents(
   struct PollResult* pollResult,
-  size_t numReadyFDs)
+  size_t numReadyEvents)
 {
   assert(pollResult != NULL);
 
-  pollResult->readyFDInfoArray =
+  pollResult->readyEventInfoArray =
     resizeDynamicArray(
-      pollResult->readyFDInfoArray,
-      numReadyFDs,
-      sizeof(struct ReadyFDInfo),
+      pollResult->readyEventInfoArray,
+      numReadyEvents,
+      sizeof(struct ReadyEventInfo),
       &(pollResult->arrayCapacity));
 
-  pollResult->numReadyFDs = numReadyFDs;
+  pollResult->numReadyEvents = numReadyEvents;
 }

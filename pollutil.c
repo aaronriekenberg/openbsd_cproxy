@@ -15,6 +15,7 @@ struct PollState
   int kqueueFD;
   size_t numReadFDs;
   size_t numWriteAndTimeoutFDs;
+  size_t numPeriodicTimerIDs;
   struct kevent* keventArray;
   size_t keventArrayCapacity;
   struct PollResult* pollResult;
@@ -65,7 +66,9 @@ static void resizeKeventArray(
   pollState->keventArray =
     resizeDynamicArray(
       pollState->keventArray,
-      pollState->numReadFDs + pollState->numWriteAndTimeoutFDs,
+      (pollState->numReadFDs +
+       pollState->numWriteAndTimeoutFDs +
+       pollState->numPeriodicTimerIDs),
       sizeof(struct kevent),
       &(pollState->keventArrayCapacity));
 }
@@ -181,18 +184,48 @@ void removePollFDForWriteAndTimeout(
   }
 }
 
+void addPollIDForPeriodicTimer(
+  struct PollState* pollState,
+  int id,
+  void* data,
+  uint32_t periodMilliseconds)
+{
+  struct kevent event;
+  int retVal;
+
+  assert(pollState != NULL);
+
+  EV_SET(&event, id, EVFILT_TIMER, EV_ADD, 0, periodMilliseconds, data);
+
+  retVal = signalSafeKevent(pollState->kqueueFD, &event, 1, NULL, 0, NULL);
+  if (retVal == -1)
+  {
+    proxyLog("kevent add periodic timer error id %d errno %d: %s",
+             id,
+             errno,
+             errnoToString(errno));
+    abort();
+  }
+  else
+  {
+    ++(pollState->numPeriodicTimerIDs);
+    resizeKeventArray(pollState);
+  }
+}
+
 const struct PollResult* blockingPoll(
   struct PollState* pollState)
 {
   int retVal;
-  struct ReadyFDInfo* readyFDInfo;
+  struct ReadyEventInfo* readyEventInfo;
   const struct kevent* readyKEvent;
   const struct kevent* endReadyKEvent;
 
   assert(pollState != NULL);
 
   if ((pollState->numReadFDs +
-       pollState->numWriteAndTimeoutFDs) <= 0)
+       pollState->numWriteAndTimeoutFDs +
+       pollState->numPeriodicTimerIDs) <= 0)
   {
     proxyLog("blockingPool called with no events registered");
     abort();
@@ -212,21 +245,22 @@ const struct PollResult* blockingPoll(
     abort();
   }
 
-  setPollResultNumReadyFDs(
+  setPollResultNumReadyEvents(
     pollState->pollResult,
     retVal);
 
-  readyFDInfo = pollState->pollResult->readyFDInfoArray;
+  readyEventInfo = pollState->pollResult->readyEventInfoArray;
 
   readyKEvent = pollState->keventArray;
   endReadyKEvent = readyKEvent + retVal;
 
-  for (; readyKEvent != endReadyKEvent; ++readyFDInfo, ++readyKEvent)
+  for (; readyKEvent != endReadyKEvent; ++readyEventInfo, ++readyKEvent)
   {
-    readyFDInfo->data = readyKEvent->udata;
-    readyFDInfo->readyForRead = (readyKEvent->filter == EVFILT_READ);
-    readyFDInfo->readyForWrite = (readyKEvent->filter == EVFILT_WRITE);
-    readyFDInfo->readyForTimeout = (readyKEvent->filter == EVFILT_TIMER);
+    readyEventInfo->id = readyKEvent->ident;
+    readyEventInfo->data = readyKEvent->udata;
+    readyEventInfo->readyForRead = (readyKEvent->filter == EVFILT_READ);
+    readyEventInfo->readyForWrite = (readyKEvent->filter == EVFILT_WRITE);
+    readyEventInfo->readyForTimeout = (readyKEvent->filter == EVFILT_TIMER);
   }
 
   return pollState->pollResult;
