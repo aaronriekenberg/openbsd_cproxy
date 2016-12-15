@@ -699,11 +699,11 @@ static void handleServerSocketReady(
 static void periodicTimerPop()
 {
   const struct ConnectionSocketInfo* connectionSocketInfo;
-  size_t numConnections = 0;
+  bool foundConnection = false;
 
   TAILQ_FOREACH(connectionSocketInfo, &connectionSocketInfoList, entry)
   {
-    if (numConnections == 0)
+    if (!foundConnection)
     {
       proxyLog("Active connections: [");
     }
@@ -720,10 +720,10 @@ static void periodicTimerPop()
                    (intmax_t)getSpliceBytesTransferred(
                                connectionSocketInfo->socket));
 
-    ++numConnections;
+    foundConnection = true;
   }
 
-  if (numConnections > 0)
+  if (foundConnection)
   {
     proxyLogNoTime("]");
   }
