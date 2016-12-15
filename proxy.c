@@ -175,7 +175,7 @@ static void addConnectionSocketInfoToPollState(
 
 static void removeConnectionSocketInfoFromPollState(
   struct PollState* pollState,
-  struct ConnectionSocketInfo* connectionSocketInfo)
+  const struct ConnectionSocketInfo* connectionSocketInfo)
 {
   if (connectionSocketInfo->waitingForConnect)
   {
