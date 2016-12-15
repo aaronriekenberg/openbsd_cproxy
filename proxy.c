@@ -495,13 +495,9 @@ static void destroyMarkedConnections(
   struct PollState* pollState)
 {
   struct ConnectionSocketInfo* connectionSocketInfo;
-  struct ConnectionSocketInfo* tmp;
 
-  TAILQ_FOREACH_SAFE(
-    connectionSocketInfo,
-    &destroyConnectionSocketInfoList,
-    entry,
-    tmp)
+  while ((connectionSocketInfo =
+          TAILQ_FIRST(&destroyConnectionSocketInfoList)) != NULL)
   {
     TAILQ_REMOVE(&destroyConnectionSocketInfoList, connectionSocketInfo, entry);
     destroyConnection(connectionSocketInfo, pollState);
