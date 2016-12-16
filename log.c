@@ -13,14 +13,14 @@ void proxyLogSetFlush(bool enabled)
   flushAfterLog = enabled;
 }
 
-void proxyLog(const char* format, ...)
+static void internalProxyLog(bool time, const char* format, va_list args)
 {
-  va_list args;
+  if (time)
+  {
+    printTimeString(stdout);
+    fputc(' ', stdout);
+  }
 
-  va_start(args, format);
-
-  printTimeString(stdout);
-  fputc(' ', stdout);
   vfprintf(stdout, format, args);
   fputc('\n', stdout);
 
@@ -28,6 +28,15 @@ void proxyLog(const char* format, ...)
   {
     fflush(stdout);
   }
+}
+
+void proxyLog(const char* format, ...)
+{
+  va_list args;
+
+  va_start(args, format);
+
+  internalProxyLog(true, format, args);
 
   va_end(args);
 }
@@ -38,13 +47,7 @@ void proxyLogNoTime(const char* format, ...)
 
   va_start(args, format);
 
-  vfprintf(stdout, format, args);
-  fputc('\n', stdout);
-
-  if (flushAfterLog)
-  {
-    fflush(stdout);
-  }
+  internalProxyLog(false, format, args);
 
   va_end(args);
 }
