@@ -708,7 +708,7 @@ static void periodicTimerPop()
       proxyLog("Active connections: [");
     }
 
-    proxyLogNoTime("  fd=%d rfd=%d CW: %d RW: %d %s:%s->%s:%s bytes=%jd",
+    proxyLogNoTime("  fd=%d rfd=%d cw=%d rw=%d %s:%s -> %s:%s bytes=%jd",
                    connectionSocketInfo->socket,
                    connectionSocketInfo->relatedConnectionSocketInfo->socket,
                    connectionSocketInfo->waitingForConnect,
