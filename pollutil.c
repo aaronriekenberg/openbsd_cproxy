@@ -75,7 +75,7 @@ static void resizeKeventArray(
 
 void addPollFDForRead(
   struct PollState* pollState,
-  int fd,
+  uintptr_t fd,
   void* data)
 {
   struct kevent event;
@@ -103,7 +103,7 @@ void addPollFDForRead(
 
 void removePollFDForRead(
   struct PollState* pollState,
-  int fd)
+  uintptr_t fd)
 {
   struct kevent event;
   int retVal;
@@ -129,7 +129,7 @@ void removePollFDForRead(
 
 void addPollFDForWriteAndTimeout(
   struct PollState* pollState,
-  int fd,
+  uintptr_t fd,
   void* data,
   uint32_t timeoutMillseconds)
 {
@@ -159,7 +159,7 @@ void addPollFDForWriteAndTimeout(
 
 void removePollFDForWriteAndTimeout(
   struct PollState* pollState,
-  int fd)
+  uintptr_t fd)
 {
   struct kevent events[2];
   int retVal;
@@ -186,7 +186,7 @@ void removePollFDForWriteAndTimeout(
 
 void addPollIDForPeriodicTimer(
   struct PollState* pollState,
-  int id,
+  uintptr_t id,
   void* data,
   uint32_t periodMilliseconds)
 {

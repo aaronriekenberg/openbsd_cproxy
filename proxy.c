@@ -20,7 +20,7 @@
 
 #define MAX_OPERATIONS_FOR_ONE_FD (100)
 
-#define PERIODIC_TIMER_ID (0)
+#define PERIODIC_TIMER_ID (UINTPTR_MAX)
 
 struct AbstractSocketInfo;
 

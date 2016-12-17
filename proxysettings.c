@@ -7,6 +7,7 @@
 #include <unistd.h>
 
 #define DEFAULT_CONNECT_TIMEOUT_MS (5000)
+#define DEFAULT_PERIODIC_LOG_MS (0)
 
 static void printUsageAndExit()
 {
@@ -20,9 +21,10 @@ static void printUsageAndExit()
          "Arguments:\n"
          "  -l <local addr>:<local port>: listen address and port\n"
          "  -r <remote addr>:<remote port>: remote address and port\n"
-         "  -c <connect timeout milliseconds>: default = 5000\n"
+         "  -c <connect timeout milliseconds>: default = %d\n"
          "  -f: flush stdout on each log\n"
-         "  -p <periodic log milliseconds>: 0 = disable, default = 0\n");
+         "  -p <periodic log milliseconds>: 0 = disable, default = %d\n",
+         DEFAULT_CONNECT_TIMEOUT_MS, DEFAULT_PERIODIC_LOG_MS);
   exit(1);
 }
 
@@ -182,6 +184,7 @@ const struct ProxySettings* processArgs(
     checkedCallocOne(sizeof(struct ProxySettings));
 
   proxySettings->connectTimeoutMS = DEFAULT_CONNECT_TIMEOUT_MS;
+  proxySettings->periodicLogMS = DEFAULT_PERIODIC_LOG_MS;
   SIMPLEQ_INIT(&(proxySettings->serverAddrInfoList));
 
   while ((retVal = getopt(argc, argv, "c:fl:p:r:")) != -1)

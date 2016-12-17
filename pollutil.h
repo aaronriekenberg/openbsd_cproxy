@@ -2,6 +2,7 @@
 #define POLLUTIL_H
 
 #include "pollresult.h"
+#include <stdint.h>
 #include <sys/types.h>
 
 struct PollState;
@@ -10,26 +11,26 @@ struct PollState* newPollState();
 
 void addPollFDForRead(
   struct PollState* pollState,
-  int fd,
+  uintptr_t fd,
   void* data);
 
 void removePollFDForRead(
   struct PollState* pollState,
-  int fd);
+  uintptr_t fd);
 
 void addPollFDForWriteAndTimeout(
   struct PollState* pollState,
-  int fd,
+  uintptr_t fd,
   void* data,
   uint32_t timeoutMillseconds);
 
 void removePollFDForWriteAndTimeout(
   struct PollState* pollState,
-  int fd);
+  uintptr_t fd);
 
 void addPollIDForPeriodicTimer(
   struct PollState* pollState,
-  int id,
+  uintptr_t id,
   void* data,
   uint32_t periodMilliseconds);
 
