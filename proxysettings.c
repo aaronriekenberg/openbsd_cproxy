@@ -15,14 +15,14 @@ static void printUsageAndExit()
          "         [-l <local addr>:<local port>...]\n"
          "         -r <remote addr>:<remote port>\n"
          "         [-r <remote addr>:<remote port>...]\n"
-         "         [-c <connect timeout milliseconds>]\n"
-         "         [-p <periodic log milliseconds>] [-f]\n"
+         "         [-c <connect timeout milliseconds>] [-f]\n"
+         "         [-p <periodic log milliseconds>]\n"
          "Arguments:\n"
-         "  -l <local addr>:<local port>: specify listen address and port\n"
-         "  -r <remote addr>:<remote port>: specify remote address and port\n"
-         "  -c <connect timeout milliseconds>: specify connection timeout\n"
-         "  -p <periodic log milliseconds>: specify periodic log interval, 0 to disable\n"
-         "  -f: flush stdout on each log\n");
+         "  -l <local addr>:<local port>: listen address and port\n"
+         "  -r <remote addr>:<remote port>: remote address and port\n"
+         "  -c <connect timeout milliseconds>: default = 5000\n"
+         "  -f: flush stdout on each log\n"
+         "  -p <periodic log milliseconds>: 0 = disable, default = 0\n");
   exit(1);
 }
 
