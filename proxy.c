@@ -9,12 +9,11 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <netinet/in.h>
 #include <sys/socket.h>
-#include <sys/stdint.h>
 #include <sys/types.h>
 #include <sys/queue.h>
 
