@@ -3,10 +3,11 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 struct ReadyEventInfo
 {
-  int id;
+  uintptr_t id;
   void* data;
   bool readyForRead;
   bool readyForWrite;

@@ -3,7 +3,6 @@
 
 #include "pollresult.h"
 #include <stdint.h>
-#include <sys/types.h>
 
 struct PollState;
 
