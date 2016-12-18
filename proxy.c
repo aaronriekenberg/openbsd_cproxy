@@ -81,17 +81,16 @@ static void setupServerSockets(
   const struct ProxySettings* proxySettings,
   struct PollState* pollState)
 {
-  const struct ServerAddrInfo* serverAddrInfo;
+  const struct ListenAddrInfo* listenAddrInfo;
 
-  SIMPLEQ_FOREACH(serverAddrInfo, &(proxySettings->serverAddrInfoList), entry)
+  SIMPLEQ_FOREACH(listenAddrInfo, &(proxySettings->listenAddrInfoList), entry)
   {
-    const struct addrinfo* listenAddrInfo = serverAddrInfo->addrinfo;
     struct AddrPortStrings serverAddrPortStrings;
     struct ServerSocketInfo* serverSocketInfo =
       checkedCallocOne(sizeof(struct ServerSocketInfo));
     serverSocketInfo->handleConnectionReadyFunction = handleServerSocketReady;
 
-    if (!addrInfoToNameAndPort(listenAddrInfo,
+    if (!addrInfoToNameAndPort(listenAddrInfo->addrinfo,
                                &serverAddrPortStrings))
     {
       proxyLog("error resolving server listen address");
@@ -99,7 +98,7 @@ static void setupServerSockets(
     }
 
     if (!createNonBlockingSocket(
-           listenAddrInfo,
+           listenAddrInfo->addrinfo,
            &(serverSocketInfo->socket)))
     {
       proxyLog("error creating server socket %s:%s",
@@ -116,7 +115,7 @@ static void setupServerSockets(
       goto fail;
     }
 
-    if (!bindSocket(serverSocketInfo->socket, listenAddrInfo))
+    if (!bindSocket(serverSocketInfo->socket, listenAddrInfo->addrinfo))
     {
       proxyLog("bind error on server socket %s:%s",
                serverAddrPortStrings.addrString,

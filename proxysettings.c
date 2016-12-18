@@ -92,18 +92,18 @@ fail:
   exit(1);
 }
 
-static void parseServerAddrPort(
+static void parseListenAddrPort(
   const char* optarg,
   struct ProxySettings* proxySettings)
 {
-  struct ServerAddrInfo* serverAddrInfo =
-    checkedCallocOne(sizeof(struct ServerAddrInfo));
+  struct ListenAddrInfo* listenAddrInfo =
+    checkedCallocOne(sizeof(struct ListenAddrInfo));
 
-  serverAddrInfo->addrinfo = parseAddrPort(optarg);
+  listenAddrInfo->addrinfo = parseAddrPort(optarg);
 
   SIMPLEQ_INSERT_TAIL(
-    &(proxySettings->serverAddrInfoList),
-    serverAddrInfo, entry);
+    &(proxySettings->listenAddrInfoList),
+    listenAddrInfo, entry);
 }
 
 static void parseRemoteAddrPort(
@@ -183,7 +183,7 @@ const struct ProxySettings* processArgs(
 
   proxySettings->connectTimeoutMS = DEFAULT_CONNECT_TIMEOUT_MS;
   proxySettings->periodicLogMS = DEFAULT_PERIODIC_LOG_MS;
-  SIMPLEQ_INIT(&(proxySettings->serverAddrInfoList));
+  SIMPLEQ_INIT(&(proxySettings->listenAddrInfoList));
 
   while ((retVal = getopt(argc, argv, "c:fl:p:r:")) != -1)
   {
@@ -198,7 +198,7 @@ const struct ProxySettings* processArgs(
       break;
 
     case 'l':
-      parseServerAddrPort(optarg, proxySettings);
+      parseListenAddrPort(optarg, proxySettings);
       break;
 
     case 'p':
@@ -215,7 +215,7 @@ const struct ProxySettings* processArgs(
     }
   }
 
-  if (SIMPLEQ_EMPTY(&(proxySettings->serverAddrInfoList)) ||
+  if (SIMPLEQ_EMPTY(&(proxySettings->listenAddrInfoList)) ||
       (proxySettings->remoteAddrInfoArrayLength == 0))
   {
     goto fail;

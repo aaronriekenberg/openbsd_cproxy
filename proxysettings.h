@@ -5,10 +5,10 @@
 #include <stdbool.h>
 #include <sys/queue.h>
 
-struct ServerAddrInfo
+struct ListenAddrInfo
 {
   struct addrinfo* addrinfo;
-  SIMPLEQ_ENTRY(ServerAddrInfo) entry;
+  SIMPLEQ_ENTRY(ListenAddrInfo) entry;
 };
 
 struct RemoteAddrInfo
@@ -19,7 +19,7 @@ struct RemoteAddrInfo
 
 struct ProxySettings
 {
-  SIMPLEQ_HEAD(,ServerAddrInfo) serverAddrInfoList;
+  SIMPLEQ_HEAD(,ListenAddrInfo) listenAddrInfoList;
   struct RemoteAddrInfo* remoteAddrInfoArray;
   size_t remoteAddrInfoArrayLength;
   uint32_t connectTimeoutMS;
