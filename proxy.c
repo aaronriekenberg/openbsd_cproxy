@@ -526,9 +526,7 @@ static struct ConnectionSocketInfo* handleConnectionReadyForWrite(
 
   if (connectionSocketInfo->waitingForConnect)
   {
-    int socketError;
-
-    socketError = getSocketError(connectionSocketInfo->socket);
+    const int socketError = getSocketError(connectionSocketInfo->socket);
     if (socketError == EINPROGRESS)
     {
       /* do nothing, still in progress */
