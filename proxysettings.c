@@ -11,16 +11,18 @@
 
 static void printUsageAndExit()
 {
-  printf("Usage:\n"
-         "  %s [options]\n"
-         "Options:\n"
-         "  -l <listen addr:listen port>\t\tlisten address and port, >= 1 required\n"
-         "  -r <remote addr:remote port>\t\tremote address and port, >= 1 required\n"
-         "  -c <connect timeout milliseconds>\tdefault = %d\n"
-         "  -f\t\t\t\t\tflush stdout on each log\n"
-         "  -p <periodic log milliseconds>\t0 = disable, default = %d\n",
-         getprogname(),
-         DEFAULT_CONNECT_TIMEOUT_MS, DEFAULT_PERIODIC_LOG_MS);
+  printf(
+    "Usage:\n"
+    "  %s [options]\n"
+    "Options:\n"
+    "  -l <listen addr:listen port>\t\tlisten address and port, >= 1 required\n"
+    "  -r <remote addr:remote port>\t\tremote address and port, >= 1 required\n"
+    "  -c <connect timeout milliseconds>\tdefault = %d\n"
+    "  -f\t\t\t\t\tflush stdout on each log\n"
+    "  -p <periodic log milliseconds>\t0 = disable, default = %d\n",
+    getprogname(),
+    DEFAULT_CONNECT_TIMEOUT_MS,
+    DEFAULT_PERIODIC_LOG_MS);
   exit(1);
 }
 
