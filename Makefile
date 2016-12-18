@@ -14,12 +14,12 @@ SRC = errutil.c \
       timeutil.c
 OBJS = $(SRC:.c=.o)
 
-all: cproxy
+all: oproxy
 
 clean:
-	rm -f *.o cproxy
+	rm -f *.o oproxy
 
-cproxy: $(OBJS)
+oproxy: $(OBJS)
 	$(CC) $(LDFLAGS) $(OBJS) -o $@
 
 depend:

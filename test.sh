@@ -9,7 +9,7 @@ NUM_REMOTE_PORTS=1
 CONNECT_TIMEOUT=2000
 PERIODIC_LOG_INTERVAL=1000
 
-CMD="./cproxy"
+CMD="./oproxy"
 
 i=0
 while [ ${i} -lt ${NUM_LOCAL_PORTS} ]; do
@@ -23,7 +23,7 @@ while [ ${i} -lt ${NUM_REMOTE_PORTS} ]; do
   i=$((${i} + 1))
 done
 
-CMD="${CMD} -c ${CONNECT_TIMEOUT} -p ${PERIODIC_LOG_INTERVAL}"
+CMD="${CMD} -c ${CONNECT_TIMEOUT} -p ${PERIODIC_LOG_INTERVAL} -f"
 
 echo "${CMD}"
 $CMD
