@@ -616,7 +616,7 @@ static void handleConnectionSocketReady(
 
   if (connectionSocketInfo->markedForDestruction)
   {
-    return;
+    disconnectSocketInfo = connectionSocketInfo;
   }
 
   if (readyEventInfo->readyForRead &&
