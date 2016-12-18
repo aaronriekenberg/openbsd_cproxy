@@ -14,8 +14,8 @@ static void printUsageAndExit()
   printf("Usage:\n"
          "  %s [options]\n"
          "Options:\n"
-         "  -l <listen addr:listen port>\t\tlisten address and port, at least one required\n"
-         "  -r <remote addr:remote port>\t\tremote address and port, at least are required\n"
+         "  -l <listen addr:listen port>\t\tlisten address and port, >= 1 required\n"
+         "  -r <remote addr:remote port>\t\tremote address and port, >= 1 required\n"
          "  -c <connect timeout milliseconds>\tdefault = %d\n"
          "  -f\t\t\t\t\tflush stdout on each log\n"
          "  -p <periodic log milliseconds>\t0 = disable, default = %d\n",
