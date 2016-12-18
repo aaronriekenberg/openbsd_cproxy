@@ -12,18 +12,14 @@
 static void printUsageAndExit()
 {
   printf("Usage:\n"
-         "  cproxy -l <local addr>:<local port>\n"
-         "         [-l <local addr>:<local port>...]\n"
-         "         -r <remote addr>:<remote port>\n"
-         "         [-r <remote addr>:<remote port>...]\n"
-         "         [-c <connect timeout milliseconds>] [-f]\n"
-         "         [-p <periodic log milliseconds>]\n"
-         "Arguments:\n"
-         "  -l <local addr>:<local port>: listen address and port\n"
-         "  -r <remote addr>:<remote port>: remote address and port\n"
-         "  -c <connect timeout milliseconds>: default = %d\n"
-         "  -f: flush stdout on each log\n"
-         "  -p <periodic log milliseconds>: 0 = disable, default = %d\n",
+         "  %s [options]\n"
+         "Options:\n"
+         "  -l <listen addr:listen port>\t\tlisten address and port, at least one required\n"
+         "  -r <remote addr:remote port>\t\tremote address and port, at least are required\n"
+         "  -c <connect timeout milliseconds>\tdefault = %d\n"
+         "  -f\t\t\t\t\tflush stdout on each log\n"
+         "  -p <periodic log milliseconds>\t0 = disable, default = %d\n",
+         getprogname(),
          DEFAULT_CONNECT_TIMEOUT_MS, DEFAULT_PERIODIC_LOG_MS);
   exit(1);
 }
