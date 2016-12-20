@@ -31,6 +31,8 @@ void* checkedReallocarray(
   return retVal;
 }
 
+#define MAX_DYNAMIC_ARRAY_LENGTH (((size_t)1) << ((sizeof(size_t) * 8) - 1))
+
 void* resizeDynamicArray(
   void* array,
   const size_t newLength,
@@ -40,6 +42,13 @@ void* resizeDynamicArray(
   bool changedCapacity = false;
 
   assert(capacity != NULL);
+
+  if (newLength > MAX_DYNAMIC_ARRAY_LENGTH)
+  {
+    printf("newLength %zu > MAX_DYNAMIC_ARRAY_LENGTH %zu\n",
+           newLength, MAX_DYNAMIC_ARRAY_LENGTH);
+    abort();
+  }
 
   while (newLength > (*capacity))
   {
