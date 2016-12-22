@@ -42,7 +42,7 @@ struct PollState* newPollState()
 }
 
 static size_t getNumRegisteredPollIDs(
-  struct PollState* pollState)
+  const struct PollState* pollState)
 {
   return (pollState->numReadFDs +
           pollState->numWriteAndTimeoutFDs +
