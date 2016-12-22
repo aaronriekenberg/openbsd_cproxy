@@ -41,6 +41,14 @@ struct PollState* newPollState()
   return pollState;
 }
 
+static size_t getNumRegisteredPollIDs(
+  struct PollState* pollState)
+{
+  return (pollState->numReadFDs +
+          pollState->numWriteAndTimeoutFDs +
+          pollState->numPeriodicTimerIDs);
+}
+
 static int signalSafeKevent(
   int kq, const struct kevent *changelist, int nchanges,
   struct kevent *eventlist, int nevents,
@@ -66,9 +74,7 @@ static void resizeKeventArray(
   pollState->keventArray =
     resizeDynamicArray(
       pollState->keventArray,
-      (pollState->numReadFDs +
-       pollState->numWriteAndTimeoutFDs +
-       pollState->numPeriodicTimerIDs),
+      getNumRegisteredPollIDs(pollState),
       sizeof(struct kevent),
       &(pollState->keventArrayCapacity));
 }
@@ -223,9 +229,7 @@ const struct PollResult* blockingPoll(
 
   assert(pollState != NULL);
 
-  if ((pollState->numReadFDs +
-       pollState->numWriteAndTimeoutFDs +
-       pollState->numPeriodicTimerIDs) <= 0)
+  if (getNumRegisteredPollIDs(pollState) == 0)
   {
     proxyLog("blockingPool called with no events registered");
     abort();
