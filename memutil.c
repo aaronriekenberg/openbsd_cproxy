@@ -39,8 +39,6 @@ void* resizeDynamicArray(
   const size_t memberSize,
   size_t* capacity)
 {
-  bool changedCapacity = false;
-
   assert(capacity != NULL);
 
   if (newLength <= (*capacity))
@@ -55,9 +53,8 @@ void* resizeDynamicArray(
     abort();
   }
 
-  while (newLength > (*capacity))
+  do
   {
-    changedCapacity = true;
     if ((*capacity) == 0)
     {
       (*capacity) = 2;
@@ -66,15 +63,10 @@ void* resizeDynamicArray(
     {
       (*capacity) *= 2;
     }
-  }
+  } while (newLength > (*capacity));
 
-  if (changedCapacity)
-  {
-    array = checkedReallocarray(
-      array,
-      *capacity,
-      memberSize);
-  }
-
-  return array;
+  return checkedReallocarray(
+    array,
+    *capacity,
+    memberSize);
 }
