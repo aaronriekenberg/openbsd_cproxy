@@ -43,6 +43,11 @@ void* resizeDynamicArray(
 
   assert(capacity != NULL);
 
+  if (newLength <= (*capacity))
+  {
+    return array;
+  }
+
   if (newLength > MAX_DYNAMIC_ARRAY_LENGTH)
   {
     printf("newLength %zu > MAX_DYNAMIC_ARRAY_LENGTH %zu\n",
