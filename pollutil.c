@@ -84,14 +84,14 @@ void addPollFDForRead(
   uintptr_t fd,
   void* data)
 {
-  struct kevent event;
+  struct kevent events[1];
   int retVal;
 
   assert(pollState != NULL);
 
-  EV_SET(&event, fd, EVFILT_READ, EV_ADD, 0, 0, data);
+  EV_SET(events + 0, fd, EVFILT_READ, EV_ADD, 0, 0, data);
 
-  retVal = signalSafeKevent(pollState->kqueueFD, &event, 1, NULL, 0, NULL);
+  retVal = signalSafeKevent(pollState->kqueueFD, events, 1, NULL, 0, NULL);
   if (retVal == -1)
   {
     proxyLog("kevent add read event error fd %d errno %d: %s",
@@ -111,14 +111,14 @@ void removePollFDForRead(
   struct PollState* pollState,
   uintptr_t fd)
 {
-  struct kevent event;
+  struct kevent events[1];
   int retVal;
 
   assert(pollState != NULL);
 
-  EV_SET(&event, fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+  EV_SET(events + 0, fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
 
-  retVal = signalSafeKevent(pollState->kqueueFD, &event, 1, NULL, 0, NULL);
+  retVal = signalSafeKevent(pollState->kqueueFD, events, 1, NULL, 0, NULL);
   if (retVal == -1)
   {
     proxyLog("kevent remove read event error fd %d errno %d: %s",
@@ -144,8 +144,8 @@ void addPollFDForWriteAndTimeout(
 
   assert(pollState != NULL);
 
-  EV_SET(&(events[0]), fd, EVFILT_WRITE, EV_ADD, 0, 0, data);
-  EV_SET(&(events[1]), fd, EVFILT_TIMER, EV_ADD, 0, timeoutMillseconds, data);
+  EV_SET(events + 0, fd, EVFILT_WRITE, EV_ADD, 0, 0, data);
+  EV_SET(events + 1, fd, EVFILT_TIMER, EV_ADD, 0, timeoutMillseconds, data);
 
   retVal = signalSafeKevent(pollState->kqueueFD, events, 2, NULL, 0, NULL);
   if (retVal == -1)
@@ -172,8 +172,8 @@ void removePollFDForWriteAndTimeout(
 
   assert(pollState != NULL);
 
-  EV_SET(&(events[0]), fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
-  EV_SET(&(events[1]), fd, EVFILT_TIMER, EV_DELETE, 0, 0, NULL);
+  EV_SET(events + 0, fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
+  EV_SET(events + 1, fd, EVFILT_TIMER, EV_DELETE, 0, 0, NULL);
 
   retVal = signalSafeKevent(pollState->kqueueFD, events, 2, NULL, 0, NULL);
   if (retVal == -1)
@@ -196,14 +196,14 @@ void addPollIDForPeriodicTimer(
   void* data,
   uint32_t periodMilliseconds)
 {
-  struct kevent event;
+  struct kevent events[1];
   int retVal;
 
   assert(pollState != NULL);
 
-  EV_SET(&event, id, EVFILT_TIMER, EV_ADD, 0, periodMilliseconds, data);
+  EV_SET(events + 0, id, EVFILT_TIMER, EV_ADD, 0, periodMilliseconds, data);
 
-  retVal = signalSafeKevent(pollState->kqueueFD, &event, 1, NULL, 0, NULL);
+  retVal = signalSafeKevent(pollState->kqueueFD, events, 1, NULL, 0, NULL);
   if (retVal == -1)
   {
     proxyLog("kevent add periodic timer error id %d errno %d: %s",
