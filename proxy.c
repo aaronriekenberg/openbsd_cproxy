@@ -20,30 +20,44 @@
 
 #define PERIODIC_TIMER_ID (UINTPTR_MAX)
 
-struct AbstractSocketInfo;
-
-typedef void (*HandleConnectionReadyFunction)(
-  struct AbstractSocketInfo* abstractSocketInfo,
-  const struct ReadyEventInfo* readyEventInfo,
-  const struct ProxySettings* proxySettings,
-  struct PollState* pollState);
-
-struct AbstractSocketInfo
+struct ProxyContext
 {
-  HandleConnectionReadyFunction handleConnectionReadyFunction;
+  const struct ProxySettings* proxySettings;
+  struct PollState* pollState;
 };
+
+struct AbstractReadyEventHandler;
+
+typedef void (*HandleReadyEventFunction)(
+  struct AbstractReadyEventHandler* abstractReadyEventHandler,
+  const struct ReadyEventInfo* readyEventInfo,
+  struct ProxyContext* proxyContext);
+
+struct AbstractReadyEventHandler
+{
+  HandleReadyEventFunction handleReadyEventFunction;
+};
+
+struct PeriodicTimerInfo
+{
+  HandleReadyEventFunction handleReadyEventFunction;
+};
+
+static void handlePeriodicTimerReady(
+  struct AbstractReadyEventHandler* abstractReadyEventHandler,
+  const struct ReadyEventInfo* readyEventInfo,
+  struct ProxyContext* proxyContext);
 
 struct ServerSocketInfo
 {
-  HandleConnectionReadyFunction handleConnectionReadyFunction;
+  HandleReadyEventFunction handleReadyEventFunction;
   int socket;
 };
 
 static void handleServerSocketReady(
-  struct AbstractSocketInfo* abstractSocketInfo,
+  struct AbstractReadyEventHandler* abstractReadyEventHandler,
   const struct ReadyEventInfo* readyEventInfo,
-  const struct ProxySettings* proxySettings,
-  struct PollState* pollState);
+  struct ProxyContext* proxyContext);
 
 enum ConnectionSocketInfoType
 {
@@ -53,7 +67,7 @@ enum ConnectionSocketInfoType
 
 struct ConnectionSocketInfo
 {
-  HandleConnectionReadyFunction handleConnectionReadyFunction;
+  HandleReadyEventFunction handleReadyEventFunction;
   int socket;
   enum ConnectionSocketInfoType type;
   bool markedForDestruction;
@@ -72,23 +86,22 @@ static TAILQ_HEAD(,ConnectionSocketInfo) destroyConnectionSocketInfoList =
   TAILQ_HEAD_INITIALIZER(destroyConnectionSocketInfoList);
 
 static void handleConnectionSocketReady(
-  struct AbstractSocketInfo* abstractSocketInfo,
+  struct AbstractReadyEventHandler* abstractReadyEventHandler,
   const struct ReadyEventInfo* readyEventInfo,
-  const struct ProxySettings* proxySettings,
-  struct PollState* pollState);
+  struct ProxyContext* proxyContext);
 
-static void setupServerSockets(
-  const struct ProxySettings* proxySettings,
-  struct PollState* pollState)
+static void setupServerSockets(struct ProxyContext* proxyContext)
 {
   const struct ListenAddrInfo* listenAddrInfo;
 
-  SIMPLEQ_FOREACH(listenAddrInfo, &(proxySettings->listenAddrInfoList), entry)
+  SIMPLEQ_FOREACH(listenAddrInfo,
+                  &(proxyContext->proxySettings->listenAddrInfoList),
+                  entry)
   {
     struct AddrPortStrings serverAddrPortStrings;
     struct ServerSocketInfo* serverSocketInfo =
       checkedCallocOne(sizeof(struct ServerSocketInfo));
-    serverSocketInfo->handleConnectionReadyFunction = handleServerSocketReady;
+    serverSocketInfo->handleReadyEventFunction = handleServerSocketReady;
 
     if (!addrInfoToNameAndPort(listenAddrInfo->addrinfo,
                                &serverAddrPortStrings))
@@ -137,7 +150,7 @@ static void setupServerSockets(
              serverSocketInfo->socket);
 
     addPollFDForRead(
-      pollState,
+      proxyContext->pollState,
       serverSocketInfo->socket,
       serverSocketInfo);
   }
@@ -149,41 +162,40 @@ fail:
 }
 
 static void addConnectionSocketInfoToPollState(
-  struct PollState* pollState,
-  struct ConnectionSocketInfo* connectionSocketInfo,
-  const struct ProxySettings* proxySettings)
+  struct ProxyContext* proxyContext,
+  struct ConnectionSocketInfo* connectionSocketInfo)
 {
   if (connectionSocketInfo->waitingForConnect)
   {
     addPollFDForWriteAndTimeout(
-      pollState,
+      proxyContext->pollState,
       connectionSocketInfo->socket,
       connectionSocketInfo,
-      proxySettings->connectTimeoutMS);
+      proxyContext->proxySettings->connectTimeoutMS);
   }
   if (connectionSocketInfo->waitingForRead)
   {
     addPollFDForRead(
-      pollState,
+      proxyContext->pollState,
       connectionSocketInfo->socket,
       connectionSocketInfo);
   }
 }
 
 static void removeConnectionSocketInfoFromPollState(
-  struct PollState* pollState,
+  struct ProxyContext* proxyContext,
   const struct ConnectionSocketInfo* connectionSocketInfo)
 {
   if (connectionSocketInfo->waitingForConnect)
   {
     removePollFDForWriteAndTimeout(
-      pollState,
+      proxyContext->pollState,
       connectionSocketInfo->socket);
   }
   if (connectionSocketInfo->waitingForRead)
   {
     removePollFDForRead(
-      pollState,
+      proxyContext->pollState,
       connectionSocketInfo->socket);
   }
 }
@@ -340,8 +352,7 @@ fail:
 static void handleNewClientSocket(
   const int clientSocket,
   const struct SockAddrInfo* clientSockAddrInfo,
-  const struct ProxySettings* proxySettings,
-  struct PollState* pollState)
+  struct ProxyContext* proxyContext)
 {
   struct RemoteSocketResult remoteSocketResult;
   struct ConnectionSocketInfo* connInfo1 =
@@ -349,7 +360,7 @@ static void handleNewClientSocket(
   struct ConnectionSocketInfo* connInfo2 = NULL;
   const struct RemoteAddrInfo* remoteAddrInfo;
 
-  connInfo1->handleConnectionReadyFunction = handleConnectionSocketReady;
+  connInfo1->handleReadyEventFunction = handleConnectionSocketReady;
   connInfo1->type = CLIENT_TO_PROXY;
   connInfo1->socket = clientSocket;
 
@@ -363,10 +374,10 @@ static void handleNewClientSocket(
   }
 
   connInfo2 = checkedCallocOne(sizeof(struct ConnectionSocketInfo));
-  connInfo2->handleConnectionReadyFunction = handleConnectionSocketReady;
+  connInfo2->handleReadyEventFunction = handleConnectionSocketReady;
   connInfo2->type = PROXY_TO_REMOTE;
 
-  remoteAddrInfo = chooseRemoteAddrInfo(proxySettings);
+  remoteAddrInfo = chooseRemoteAddrInfo(proxyContext->proxySettings);
 
   remoteSocketResult =
     createRemoteSocket(clientSocket,
@@ -395,8 +406,8 @@ static void handleNewClientSocket(
   connInfo1->relatedConnectionSocketInfo = connInfo2;
   connInfo2->relatedConnectionSocketInfo = connInfo1;
 
-  addConnectionSocketInfoToPollState(pollState, connInfo1, proxySettings);
-  addConnectionSocketInfoToPollState(pollState, connInfo2, proxySettings);
+  addConnectionSocketInfoToPollState(proxyContext, connInfo1);
+  addConnectionSocketInfoToPollState(proxyContext, connInfo2);
 
   TAILQ_INSERT_TAIL(
     &connectionSocketInfoList,
@@ -467,15 +478,15 @@ static void printDisconnectMessage(
 }
 
 static void destroyConnection(
-  struct ConnectionSocketInfo* connectionSocketInfo,
-  struct PollState* pollState)
+  struct ProxyContext* proxyContext,
+  struct ConnectionSocketInfo* connectionSocketInfo)
 {
   struct ConnectionSocketInfo* relatedConnectionSocketInfo =
     connectionSocketInfo->relatedConnectionSocketInfo;
 
   printDisconnectMessage(connectionSocketInfo);
 
-  removeConnectionSocketInfoFromPollState(pollState, connectionSocketInfo);
+  removeConnectionSocketInfoFromPollState(proxyContext, connectionSocketInfo);
   signalSafeClose(connectionSocketInfo->socket);
 
   free(connectionSocketInfo);
@@ -489,7 +500,7 @@ static void destroyConnection(
 }
 
 static void destroyMarkedConnections(
-  struct PollState* pollState)
+  struct ProxyContext* proxyContext)
 {
   struct ConnectionSocketInfo* connectionSocketInfo;
 
@@ -497,13 +508,13 @@ static void destroyMarkedConnections(
           TAILQ_FIRST(&destroyConnectionSocketInfoList)) != NULL)
   {
     TAILQ_REMOVE(&destroyConnectionSocketInfoList, connectionSocketInfo, entry);
-    destroyConnection(connectionSocketInfo, pollState);
+    destroyConnection(proxyContext, connectionSocketInfo);
   }
 }
 
 static struct ConnectionSocketInfo* handleConnectionReadyForRead(
   struct ConnectionSocketInfo* connectionSocketInfo,
-  struct PollState* pollState)
+  struct ProxyContext* proxyContext)
 {
   struct ConnectionSocketInfo* disconnectSocketInfo = NULL;
 
@@ -518,8 +529,7 @@ static struct ConnectionSocketInfo* handleConnectionReadyForRead(
 
 static struct ConnectionSocketInfo* handleConnectionReadyForWrite(
   struct ConnectionSocketInfo* connectionSocketInfo,
-  struct PollState* pollState,
-  const struct ProxySettings* proxySettings)
+  struct ProxyContext* proxyContext)
 {
   struct ConnectionSocketInfo* relatedConnectionSocketInfo =
     connectionSocketInfo->relatedConnectionSocketInfo;
@@ -557,19 +567,19 @@ static struct ConnectionSocketInfo* handleConnectionReadyForWrite(
       }
 
       removeConnectionSocketInfoFromPollState(
-        pollState, connectionSocketInfo);
+        proxyContext, connectionSocketInfo);
       removeConnectionSocketInfoFromPollState(
-        pollState, relatedConnectionSocketInfo);
+        proxyContext, relatedConnectionSocketInfo);
 
       connectionSocketInfo->waitingForConnect = false;
       connectionSocketInfo->waitingForRead = true;
       addConnectionSocketInfoToPollState(
-        pollState, connectionSocketInfo, proxySettings);
+        proxyContext, connectionSocketInfo);
 
       relatedConnectionSocketInfo->waitingForConnect = false;
       relatedConnectionSocketInfo->waitingForRead = true;
       addConnectionSocketInfoToPollState(
-        pollState, relatedConnectionSocketInfo, proxySettings);
+        proxyContext, relatedConnectionSocketInfo);
     }
   }
 
@@ -581,7 +591,7 @@ fail:
 
 static struct ConnectionSocketInfo* handleConnectionReadyForTimeout(
   struct ConnectionSocketInfo* connectionSocketInfo,
-  struct PollState* pollState)
+  struct ProxyContext* proxyContext)
 {
   struct ConnectionSocketInfo* disconnectSocketInfo = NULL;
 
@@ -595,13 +605,12 @@ static struct ConnectionSocketInfo* handleConnectionReadyForTimeout(
 }
 
 static void handleConnectionSocketReady(
-  struct AbstractSocketInfo* abstractSocketInfo,
+  struct AbstractReadyEventHandler* abstractReadyEventHandler,
   const struct ReadyEventInfo* readyEventInfo,
-  const struct ProxySettings* proxySettings,
-  struct PollState* pollState)
+  struct ProxyContext* proxyContext)
 {
   struct ConnectionSocketInfo* connectionSocketInfo =
-    (struct ConnectionSocketInfo*) abstractSocketInfo;
+    (struct ConnectionSocketInfo*) abstractReadyEventHandler;
   struct ConnectionSocketInfo* disconnectSocketInfo = NULL;
 
 #ifdef DEBUG_PROXY
@@ -624,7 +633,7 @@ static void handleConnectionSocketReady(
     disconnectSocketInfo =
       handleConnectionReadyForRead(
         connectionSocketInfo,
-        pollState);
+        proxyContext);
   }
 
   if (readyEventInfo->readyForWrite &&
@@ -633,8 +642,7 @@ static void handleConnectionSocketReady(
     disconnectSocketInfo =
       handleConnectionReadyForWrite(
         connectionSocketInfo,
-        pollState,
-        proxySettings);
+        proxyContext);
   }
 
   if (readyEventInfo->readyForTimeout &&
@@ -643,7 +651,7 @@ static void handleConnectionSocketReady(
     disconnectSocketInfo =
       handleConnectionReadyForTimeout(
         connectionSocketInfo,
-        pollState);
+        proxyContext);
   }
 
   if (disconnectSocketInfo != NULL)
@@ -653,13 +661,12 @@ static void handleConnectionSocketReady(
 }
 
 static void handleServerSocketReady(
-  struct AbstractSocketInfo* abstractSocketInfo,
+  struct AbstractReadyEventHandler* abstractReadyEventHandler,
   const struct ReadyEventInfo* readyEventInfo,
-  const struct ProxySettings* proxySettings,
-  struct PollState* pollState)
+  struct ProxyContext* proxyContext)
 {
   struct ServerSocketInfo* serverSocketInfo =
-    (struct ServerSocketInfo*) abstractSocketInfo;
+    (struct ServerSocketInfo*) abstractReadyEventHandler;
   enum AcceptSocketResult acceptSocketResult = ACCEPT_SOCKET_RESULT_SUCCESS;
   int i;
 
@@ -686,13 +693,15 @@ static void handleServerSocketReady(
       handleNewClientSocket(
         acceptedFD,
         &clientSockAddrInfo,
-        proxySettings,
-        pollState);
+        proxyContext);
     }
   }
 }
 
-static void periodicTimerPop()
+static void handlePeriodicTimerReady(
+  struct AbstractReadyEventHandler* abstractReadyEventHandler,
+  const struct ReadyEventInfo* readyEventInfo,
+  struct ProxyContext* proxyContext)
 {
   const struct ConnectionSocketInfo* connectionSocketInfo;
   bool foundConnection = false;
@@ -750,30 +759,34 @@ static void logSettings(
 static void runProxy(
   const struct ProxySettings* proxySettings)
 {
-  struct PollState* pollState;
+  struct ProxyContext* proxyContext;
 
   proxyLogSetFlush(proxySettings->flushAfterLog);
 
   logSettings(proxySettings);
 
-  pollState = newPollState();
+  proxyContext = checkedCallocOne(sizeof(struct ProxyContext));
+  proxyContext->proxySettings = proxySettings;
+  proxyContext->pollState = newPollState();
 
-  setupServerSockets(
-    proxySettings,
-    pollState);
+  setupServerSockets(proxyContext);
 
   if (proxySettings->periodicLogMS > 0)
   {
+    struct PeriodicTimerInfo* periodicTimerInfo =
+      checkedCallocOne(sizeof(struct PeriodicTimerInfo));
+    periodicTimerInfo->handleReadyEventFunction = handlePeriodicTimerReady;
+
     addPollIDForPeriodicTimer(
-      pollState,
+      proxyContext->pollState,
       PERIODIC_TIMER_ID,
-      NULL,
+      periodicTimerInfo,
       proxySettings->periodicLogMS);
   }
 
   while (true)
   {
-    const struct PollResult* pollResult = blockingPoll(pollState);
+    const struct PollResult* pollResult = blockingPoll(proxyContext->pollState);
     const struct ReadyEventInfo* readyEventInfo =
       pollResult->readyEventInfoArray;
     const struct ReadyEventInfo* endReadyEventInfo =
@@ -782,19 +795,15 @@ static void runProxy(
     for (; readyEventInfo != endReadyEventInfo;
          ++readyEventInfo)
     {
-      if (readyEventInfo->id == PERIODIC_TIMER_ID)
-      {
-        periodicTimerPop();
-      }
-      else
-      {
-        struct AbstractSocketInfo* abstractSocketInfo = readyEventInfo->data;
-        (*(abstractSocketInfo->handleConnectionReadyFunction))(
-          abstractSocketInfo, readyEventInfo, proxySettings, pollState);
-      }
+      struct AbstractReadyEventHandler* abstractReadyEventHandler =
+        readyEventInfo->data;
+      (*(abstractReadyEventHandler->handleReadyEventFunction))(
+        abstractReadyEventHandler, 
+        readyEventInfo,
+        proxyContext);
     }
 
-    destroyMarkedConnections(pollState);
+    destroyMarkedConnections(proxyContext);
   }
 }
 
