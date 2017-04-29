@@ -490,7 +490,6 @@ static void destroyConnection(
   signalSafeClose(connectionSocketInfo->socket);
 
   free(connectionSocketInfo);
-
   connectionSocketInfo = NULL;
 
   if (relatedConnectionSocketInfo != NULL)
