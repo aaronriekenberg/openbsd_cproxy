@@ -613,7 +613,8 @@ static void handleConnectionSocketReady(
   struct ConnectionSocketInfo* disconnectSocketInfo = NULL;
 
 #ifdef DEBUG_PROXY
-  proxyLog("fd %d readyForRead %d readyForWrite %d readyForTimeout %d markedForDestruction %d",
+  proxyLog("fd %d readyForRead %d readyForWrite %d readyForTimeout %d "
+           "markedForDestruction %d",
            connectionSocketInfo->socket,
            readyEventInfo->readyForRead,
            readyEventInfo->readyForWrite,
