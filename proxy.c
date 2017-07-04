@@ -20,10 +20,16 @@
 
 #define PERIODIC_TIMER_ID (UINTPTR_MAX)
 
+struct ConnectionSocketInfo;
+
+TAILQ_HEAD(ConnectionSocketInfoList, ConnectionSocketInfo);
+
 struct ProxyContext
 {
   const struct ProxySettings* proxySettings;
   struct PollState* pollState;
+  struct ConnectionSocketInfoList* activeList;
+  struct ConnectionSocketInfoList* destroyedList;
 };
 
 struct AbstractReadyEventHandler;
@@ -79,11 +85,27 @@ struct ConnectionSocketInfo
   TAILQ_ENTRY(ConnectionSocketInfo) entry;
 };
 
-static TAILQ_HEAD(,ConnectionSocketInfo) connectionSocketInfoList =
-  TAILQ_HEAD_INITIALIZER(connectionSocketInfoList);
+static struct ConnectionSocketInfoList* newTAILQ()
+{
+  struct ConnectionSocketInfoList* retVal =
+    checkedCallocOne(sizeof(struct ConnectionSocketInfoList));
+  TAILQ_INIT(retVal);
+  return retVal;
+}
 
-static TAILQ_HEAD(,ConnectionSocketInfo) destroyConnectionSocketInfoList =
-  TAILQ_HEAD_INITIALIZER(destroyConnectionSocketInfoList);
+static void addToTAILQ(
+  struct ConnectionSocketInfoList* list,
+  struct ConnectionSocketInfo* connectionSocketInfo)
+{
+  TAILQ_INSERT_TAIL(list, connectionSocketInfo, entry);
+}
+
+static void removeFromTAILQ(
+  struct ConnectionSocketInfoList* list,
+  struct ConnectionSocketInfo* connectionSocketInfo)
+{
+  TAILQ_REMOVE(list, connectionSocketInfo, entry);
+}
 
 static void handleConnectionSocketReady(
   struct AbstractReadyEventHandler* abstractReadyEventHandler,
@@ -409,15 +431,8 @@ static void handleNewClientSocket(
   addConnectionSocketInfoToPollState(proxyContext, connInfo1);
   addConnectionSocketInfoToPollState(proxyContext, connInfo2);
 
-  TAILQ_INSERT_TAIL(
-    &connectionSocketInfoList,
-    connInfo1,
-    entry);
-
-  TAILQ_INSERT_TAIL(
-    &connectionSocketInfoList,
-    connInfo2,
-    entry);
+  addToTAILQ(proxyContext->activeList, connInfo1);
+  addToTAILQ(proxyContext->activeList, connInfo2);
 
   return;
 
@@ -428,7 +443,8 @@ fail:
 }
 
 static void markForDestruction(
-  struct ConnectionSocketInfo* connectionSocketInfo)
+  struct ConnectionSocketInfo* connectionSocketInfo,
+  struct ProxyContext* proxyContext)
 {
   struct ConnectionSocketInfo* relatedConnectionSocketInfo = 
     connectionSocketInfo->relatedConnectionSocketInfo;
@@ -436,27 +452,15 @@ static void markForDestruction(
   if (!connectionSocketInfo->markedForDestruction)
   {
     connectionSocketInfo->markedForDestruction = true;
-    TAILQ_REMOVE(
-      &connectionSocketInfoList,
-      connectionSocketInfo,
-      entry);
-    TAILQ_INSERT_TAIL(
-      &destroyConnectionSocketInfoList,
-      connectionSocketInfo,
-      entry);
+    removeFromTAILQ(proxyContext->activeList, connectionSocketInfo);
+    addToTAILQ(proxyContext->destroyedList, connectionSocketInfo);
   }
 
   if (!relatedConnectionSocketInfo->markedForDestruction)
   {
     relatedConnectionSocketInfo->markedForDestruction = true;
-    TAILQ_REMOVE(
-      &connectionSocketInfoList,
-      relatedConnectionSocketInfo,
-      entry);
-    TAILQ_INSERT_TAIL(
-      &destroyConnectionSocketInfoList,
-      relatedConnectionSocketInfo,
-      entry);
+    removeFromTAILQ(proxyContext->activeList, relatedConnectionSocketInfo);
+    addToTAILQ(proxyContext->destroyedList, relatedConnectionSocketInfo);
   }
 }
 
@@ -504,9 +508,9 @@ static void destroyMarkedConnections(
   struct ConnectionSocketInfo* connectionSocketInfo;
 
   while ((connectionSocketInfo =
-          TAILQ_FIRST(&destroyConnectionSocketInfoList)) != NULL)
+          TAILQ_FIRST(proxyContext->destroyedList)) != NULL)
   {
-    TAILQ_REMOVE(&destroyConnectionSocketInfoList, connectionSocketInfo, entry);
+    removeFromTAILQ(proxyContext->destroyedList, connectionSocketInfo);
     destroyConnection(proxyContext, connectionSocketInfo);
   }
 }
@@ -656,7 +660,7 @@ static void handleConnectionSocketReady(
 
   if (disconnectSocketInfo != NULL)
   {
-    markForDestruction(disconnectSocketInfo);
+    markForDestruction(disconnectSocketInfo, proxyContext);
   }
 }
 
@@ -706,7 +710,7 @@ static void handlePeriodicTimerReady(
   const struct ConnectionSocketInfo* connectionSocketInfo;
   bool foundConnection = false;
 
-  TAILQ_FOREACH(connectionSocketInfo, &connectionSocketInfoList, entry)
+  TAILQ_FOREACH(connectionSocketInfo, proxyContext->activeList, entry)
   {
     if (!foundConnection)
     {
@@ -768,6 +772,8 @@ static void runProxy(
   proxyContext = checkedCallocOne(sizeof(struct ProxyContext));
   proxyContext->proxySettings = proxySettings;
   proxyContext->pollState = newPollState();
+  proxyContext->activeList = newTAILQ();
+  proxyContext->destroyedList = newTAILQ();
 
   setupServerSockets(proxyContext);
 
