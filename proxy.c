@@ -128,7 +128,7 @@ static void setupServerSockets(struct ProxyContext* proxyContext)
   const struct ListenAddrInfo* listenAddrInfo;
 
   SIMPLEQ_FOREACH(listenAddrInfo,
-                  &(proxyContext->proxySettings->listenAddrInfoList),
+                  proxyContext->proxySettings->listenAddrInfoList,
                   entry)
   {
     struct AddrPortStrings serverAddrPortStrings;
