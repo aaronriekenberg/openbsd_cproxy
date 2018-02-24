@@ -183,7 +183,8 @@ const struct ProxySettings* processArgs(
 
   proxySettings->connectTimeoutMS = DEFAULT_CONNECT_TIMEOUT_MS;
   proxySettings->periodicLogMS = DEFAULT_PERIODIC_LOG_MS;
-  proxySettings->listenAddrInfoList = checkedCallocOne(sizeof(struct ListenAddrInfoList));
+  proxySettings->listenAddrInfoList =
+    checkedCallocOne(sizeof(struct ListenAddrInfoList));
   SIMPLEQ_INIT(proxySettings->listenAddrInfoList);
 
   while ((retVal = getopt(argc, argv, "c:fl:p:r:")) != -1)
