@@ -107,6 +107,17 @@ static void removeFromTAILQ(
   TAILQ_REMOVE(list, connectionSocketInfo, entry);
 }
 
+static struct ConnectionSocketInfo* removeFirstFromTAILQ(
+  struct ConnectionSocketInfoList* list)
+{
+  struct ConnectionSocketInfo* connectionSocketInfo = TAILQ_FIRST(list);
+  if (connectionSocketInfo != NULL)
+  {
+    TAILQ_REMOVE(list, connectionSocketInfo, entry);
+  }
+  return connectionSocketInfo;
+}
+
 static void handleConnectionSocketReady(
   struct AbstractReadyEventHandler* abstractReadyEventHandler,
   const struct ReadyEventInfo* readyEventInfo,
@@ -508,9 +519,8 @@ static void destroyMarkedConnections(
   struct ConnectionSocketInfo* connectionSocketInfo;
 
   while ((connectionSocketInfo =
-          TAILQ_FIRST(proxyContext->destroyedList)) != NULL)
+          removeFirstFromTAILQ(proxyContext->destroyedList)) != NULL)
   {
-    removeFromTAILQ(proxyContext->destroyedList, connectionSocketInfo);
     destroyConnection(proxyContext, connectionSocketInfo);
   }
 }
