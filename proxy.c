@@ -725,6 +725,7 @@ static void handlePeriodicTimerReady(
     if (!foundConnection)
     {
       proxyLog("Active connections: [");
+      foundConnection = true;
     }
 
     proxyLogNoTime("  fd=%d rfd=%d cw=%d rw=%d %s:%s -> %s:%s bytes=%jd",
@@ -738,8 +739,6 @@ static void handlePeriodicTimerReady(
                    connectionSocketInfo->serverAddrPortStrings.portString,
                    (intmax_t)getSpliceBytesTransferred(
                                connectionSocketInfo->socket));
-
-    foundConnection = true;
   }
 
   if (foundConnection)
