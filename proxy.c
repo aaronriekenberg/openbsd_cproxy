@@ -769,6 +769,19 @@ static void logSettings(
            proxySettings->periodicLogMS);
 }
 
+static struct ProxyContext* createProxyContext(
+  const struct ProxySettings* proxySettings)
+{
+  struct ProxyContext* proxyContext = checkedCallocOne(sizeof(struct ProxyContext));
+
+  proxyContext->proxySettings = proxySettings;
+  proxyContext->pollState = newPollState();
+  proxyContext->activeList = newTAILQ();
+  proxyContext->destroyedList = newTAILQ();
+
+  return proxyContext;
+}
+
 static void runProxy(
   const struct ProxySettings* proxySettings)
 {
@@ -778,11 +791,7 @@ static void runProxy(
 
   logSettings(proxySettings);
 
-  proxyContext = checkedCallocOne(sizeof(struct ProxyContext));
-  proxyContext->proxySettings = proxySettings;
-  proxyContext->pollState = newPollState();
-  proxyContext->activeList = newTAILQ();
-  proxyContext->destroyedList = newTAILQ();
+  proxyContext = createProxyContext(proxySettings);
 
   setupServerSockets(proxyContext);
 
